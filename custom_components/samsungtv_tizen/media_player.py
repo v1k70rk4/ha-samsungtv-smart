@@ -123,8 +123,6 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         hass.data[KNOWN_DEVICES_KEY] = known_devices
 
     uuid = None
-    show_channel_number = False
-    scan_app_http = True
 
     # Is this a manual configuration?
     if config.get(CONF_HOST) is not None:
@@ -305,7 +303,8 @@ class SamsungTVDevice(MediaPlayerDevice):
             if hasattr(self, '_cloud_state') and self._cloud_channel_name != "":
                 for attr, value in self._app_list_ST.items():
                     if value == self._cloud_channel_name:
-                        return attr
+                        self._running_app = attr
+                        return
 
             if self._scan_app_http:
                 for app in self._app_list:
@@ -323,9 +322,10 @@ class SamsungTVDevice(MediaPlayerDevice):
                             root = json.loads(data.encode('UTF-8'))
                             if 'visible' in root:
                                 if root['visible']:
-                                    return app
+                                    self._running_app = app
+                                    return
 
-        return 'TV/HDMI'
+        self._running_app = 'TV/HDMI'
 
     def _gen_installed_app_list(self):
 
@@ -352,9 +352,9 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Return the current input source."""
         if self._state != STATE_OFF:
 
-            # this throttle of 5 second occur only when we change the source from UI
-            # and it is used to give the the time to update the real status and provide correct feedback
-            # self._last_source_time is set on async_select_source method
+            # we throttle the method for 5 seconds when we change the source from the UI
+            # this is done to give the required time to update the real status and provide correct feedback
+            # self._last_source_time is set in async_select_source method
             call_time = datetime.now()
             if self._last_source_time is not None:
                 difference = (call_time - self._last_source_time).total_seconds()
@@ -394,17 +394,33 @@ class SamsungTVDevice(MediaPlayerDevice):
             
         return self._source
 
+    def _smartthings_keys(self, source_key):
+        if source_key.startswith("ST_HDMI"):
+            smartthings.send_command(self, source_key.replace("ST_", ""), "selectsource")
+        elif source_key == "ST_TV":
+            smartthings.send_command(self, "digitalTv", "selectsource")
+        elif source_key.startswith("ST_CH"):
+            smartthings.send_command(self, source_key.replace("ST_CH", ""), "selectchannel")
+        elif source_key == "ST_CHUP":
+            smartthings.send_command(self, "up", "stepchannel")
+        elif source_key == "ST_CHDOWN":
+            smartthings.send_command(self, "down", "stepchannel")
+    
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     def update(self):
         """Update state of device."""
         
-        """Required to get source and media title"""
-        if self._api_key and self._device_id:
+        if self._update_method == "smartthings" and self._api_key and self._device_id:
             smartthings.device_update(self)
-        self._ping_device()
+            self._ping_device()
+        else:
+            self._ping_device()
+            """Still required to get source and media title"""
+            if self._api_key and self._device_id:
+                smartthings.device_update(self)
 
         if self._state == STATE_ON and not self._power_off_in_progress():
-            self._running_app = self._get_running_app()
+            self._get_running_app()
             
         if self._state == STATE_OFF:
             self._end_of_power_off = None 
@@ -469,19 +485,25 @@ class SamsungTVDevice(MediaPlayerDevice):
             return None
 
         if self._api_key and self._device_id and hasattr(self, '_cloud_state'):
+
             if self._cloud_state == STATE_OFF:
                 self._state = STATE_OFF
                 return None
-            elif self._running_app == "TV/HDMI" and self._cloud_source in ["digitalTv", "TV"]:
-                if self._cloud_channel_name != "" and self._cloud_channel != "":
-                    if self._show_channel_number:
-                        return self._cloud_channel_name + " (" + self._cloud_channel + ")"
-                    else:
+            elif self._running_app == "TV/HDMI":
+                if self._cloud_source in ["digitalTv", "TV"]:
+                    if self._cloud_channel_name != "" and self._cloud_channel != "":
+                        if self._show_channel_number:
+                            return self._cloud_channel_name + " (" + self._cloud_channel + ")"
+                        else:
+                            return self._cloud_channel_name
+                    elif self._cloud_channel_name != "":
                         return self._cloud_channel_name
+                    elif self._cloud_channel != "":
+                        return self._cloud_channel
                 elif self._cloud_channel_name != "":
+                    # the channel name holds the running app ID
+                    # regardless of the self._cloud_source value
                     return self._cloud_channel_name
-                elif self._cloud_channel != "":
-                    return self._cloud_channel
 
         return self._get_source()
 
@@ -489,9 +511,9 @@ class SamsungTVDevice(MediaPlayerDevice):
     def state(self):
         """Return the state of the device."""
         
-        # It's assumed that after a sending a power off command, the command is accepted and
-        # for 20 seconds (defined in const POWER_OFF_DELAY) the state will be off regardless of the actual state. 
-        # This is to have a better feedback to the command in the UI 
+        # Warning: we assume that after a sending a power off command, the command is successful
+        # so for 20 seconds (defined in POWER_OFF_DELAY) the state will be off regardless of the actual state. 
+        # This is to have better feedback to the command in the UI, but the logic might cause other issues in the future
         if self._power_off_in_progress():
             return STATE_OFF
 
@@ -647,18 +669,18 @@ class SamsungTVDevice(MediaPlayerDevice):
 
             source_key = media_id
 
-            if source_key.startswith("ST_"):
-                if source_key.startswith("ST_HDMI"):
-                    smartthings.send_command(self, source_key.replace("ST_", ""), "selectsource")
-                elif source_key == "ST_TV":
-                    smartthings.send_command(self, "digitalTv", "selectsource")
-            elif "+" in source_key:
+            if "+" in source_key:
                 all_source_keys = source_key.split("+")
                 for this_key in all_source_keys:
                     if this_key.isdigit():
                         time.sleep(int(this_key)/1000)
                     else:
-                        await self.hass.async_add_job(self.send_command, this_key)
+                        if this_key.startswith("ST_"):
+                            await self.hass.async_add_job(self._smartthings_keys, this_key)
+                        else:
+                            await self.hass.async_add_job(self.send_command, this_key)
+            elif source_key.startswith("ST_"):
+                await self.hass.async_add_job(self._smartthings_keys, source_key)
             else:
                 await self.hass.async_add_job(self.send_command, source_key)
 
@@ -689,18 +711,18 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Select input source."""
         if source in self._source_list:
             source_key = self._source_list[ source ]
-            if source_key.startswith("ST_"):
-                if source_key.startswith("ST_HDMI"):
-                    smartthings.send_command(self, source_key.replace("ST_", ""), "selectsource")
-                elif source_key == "ST_TV":
-                    smartthings.send_command(self, "digitalTv", "selectsource")
-            elif "+" in source_key:
+            if "+" in source_key:
                 all_source_keys = source_key.split("+")
                 for this_key in all_source_keys:
                     if this_key.isdigit():
                         time.sleep(int(this_key)/1000)
                     else:
-                        await self.hass.async_add_job(self.send_command, this_key)
+                        if this_key.startswith("ST_"):
+                            await self.hass.async_add_job(self._smartthings_keys, this_key)
+                        else:
+                            await self.hass.async_add_job(self.send_command, this_key)
+            elif source_key.startswith("ST_"):
+                await self.hass.async_add_job(self._smartthings_keys, source_key)
             else:
                 await self.hass.async_add_job(self.send_command, self._source_list[ source ])
         elif source in self._app_list:
