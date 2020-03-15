@@ -331,7 +331,8 @@ class SamsungTVDevice(MediaPlayerDevice):
             if self._st and self._st.channel_name != "":
                 for attr, value in self._app_list_ST.items():
                     if value == self._st.channel_name:
-                        return attr
+                        self._running_app = attr
+                        return
 
             if self._scan_app_http:
                 for app in self._app_list:
@@ -349,9 +350,10 @@ class SamsungTVDevice(MediaPlayerDevice):
                             root = json.loads(data.encode('UTF-8'))
                             if 'visible' in root:
                                 if root['visible']:
-                                    return app
+                                    self._running_app = app
+                                    return
 
-        return 'TV/HDMI'
+        self._running_app = 'TV/HDMI'
 
     def _gen_installed_app_list(self):
 
@@ -443,7 +445,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._ping_device()
 
         if self._state == STATE_ON and not self._power_off_in_progress():
-            self._running_app = self._get_running_app()
+            self._get_running_app()        
 
         # if update runs at list [UPDATE_SOURCE_INTERVAL] seconds after that source is changed,
         # we reset the timeout that wait for check new source, otherwise we wait next loop
