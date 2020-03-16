@@ -1,5 +1,6 @@
 #Smartthings TV integration#
 import requests
+import logging
 from requests import ReadTimeout, ConnectTimeout, HTTPError, Timeout, ConnectionError
 from typing import Any, Dict, List, Optional
 from aiohttp import ClientSession
@@ -11,18 +12,30 @@ from homeassistant.const import (
 )
 API_BASEURL = "https://api.smartthings.com/v1"
 API_DEVICES = API_BASEURL + "/devices/"
+
 COMMAND_POWER_OFF = "{'commands': [{'component': 'main','capability': 'switch','command': 'off'}]}"
 COMMAND_POWER_ON = "{'commands': [{'component': 'main','capability': 'switch','command': 'on'}]}"
 COMMAND_REFRESH = "{'commands':[{'component': 'main','capability': 'refresh','command': 'refresh'}]}"
 COMMAND_PAUSE = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'pause'}]}"
 COMMAND_MUTE = "{'commands':[{'component': 'main','capability': 'audioMute','command': 'mute'}]}"
 COMMAND_UNMUTE = "{'commands':[{'component': 'main','capability': 'audioMute','command': 'unmute'}]}"
+COMMAND_VOLUME_UP = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeUp'}]}"
+COMMAND_VOLUME_DOWN = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeDown'}]}"
 COMMAND_PLAY = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'play'}]}"
 COMMAND_STOP = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'stop'}]}"
 COMMAND_REWIND = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'rewind'}]}"
 COMMAND_FAST_FORWARD = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'fastForward'}]}"
 COMMAND_CHANNEL_UP = "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'channelUp'}]}"
 COMMAND_CHANNEL_DOWN = "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'channelDown'}]}"
+
+COMMAND_SET_VOLUME = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'setVolume','arguments': "
+ARGS_SET_VOLUME  = "[{}]}}]}}"
+COMMAND_SET_SOURCE =  "{'commands':[{'component': 'main','capability': 'mediaInputSource','command': 'setInputSource', 'arguments': "
+ARGS_SET_SOURCE  = "['{}']}}]}}"
+COMMAND_SET_CHANNEL =  "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'setTvChannel', 'arguments': "
+ARGS_SET_CHANNEL  = "['{}']}}]}}"
+
+_LOGGER = logging.getLogger(__name__)
 
 def _headers(api_key: str) -> Dict[str, str]:
     return {
@@ -101,14 +114,14 @@ class SmartThingsTV:
         API_DEVICE = API_DEVICES + self._device_id
         API_COMMAND = API_DEVICE + "/commands"
         API_DEVICE_STATUS = API_DEVICE + "/states"
+        API_DEVICE_MAIN_STATUS = API_DEVICE + "/components/main/status" #not used, just for reference
 
-        async with self._session.post(
+        await self._session.post(
             API_COMMAND,
             headers=_headers(self._api_key),
             data=COMMAND_REFRESH,
             raise_for_status=True,
-        ) as resp:
-            cmdurl = await resp.json()
+        )
 
         async with self._session.get(
             API_DEVICE_STATUS,
@@ -117,14 +130,16 @@ class SmartThingsTV:
         ) as resp:
             data = await resp.json()
 
+        _LOGGER.debug(data)
+
         device_volume = data['main']['volume']['value']
         device_volume = int(device_volume) / 100
         device_state = data['main']['switch']['value']
         device_source = data['main']['inputSource']['value']
         device_all_sources = json.loads(data['main']['supportedInputSources']['value'])
+        device_muted = data['main']['mute']['value'] 
         device_tv_chan = data['main']['tvChannel']['value']
         device_tv_chan_name = data['main']['tvChannelName']['value']
-        device_muted = data['main']['mute']['value'] 
 
         if device_state == "off":
             self._state = STATE_OFF
@@ -147,19 +162,15 @@ class SmartThingsTV:
         datacmd = None
 
         if cmdtype == "setvolume": # sets volume
-           API_COMMAND_DATA = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'setVolume','arguments': "
-           API_COMMAND_ARG  = "[{}]}}]}}".format(command)
-           API_FULL = API_COMMAND_DATA + API_COMMAND_ARG
-           datacmd = API_FULL
+           cmdargs = ARGS_SET_VOLUME.format(command)
+           datacmd = COMMAND_SET_VOLUME + cmdargs
         elif cmdtype == "stepvolume": # steps volume up or down
            if command == "up":
-              API_COMMAND_DATA = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeUp'}]}"
-              datacmd = API_COMMAND_DATA
+              datacmd = COMMAND_VOLUME_UP
            else:
-              API_COMMAND_DATA = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeDown'}]}"
-              datacmd = API_COMMAND_DATA
+              datacmd = COMMAND_VOLUME_DPWN
         elif cmdtype == "audiomute": # mutes audio
-           if self._cloud_muted == False:
+           if self._muted == False:
               datacmd = COMMAND_MUTE
            else:
               datacmd = COMMAND_UNMUTE
@@ -168,15 +179,11 @@ class SmartThingsTV:
         elif cmdtype == "turn_on": # turns on
            datacmd = COMMAND_POWER_ON
         elif cmdtype == "selectsource": #changes source
-           API_COMMAND_DATA =  "{'commands':[{'component': 'main','capability': 'mediaInputSource','command': 'setInputSource', 'arguments': "
-           API_COMMAND_ARG  = "['{}']}}]}}".format(command)
-           API_FULL = API_COMMAND_DATA + API_COMMAND_ARG
-           datacmd = API_FULL
+           cmdargs = ARGS_SET_SOURCE.format(command)
+           datacmd = COMMAND_SET_SOURCE + cmdargs
         elif cmdtype == "selectchannel": #changes channel
-           API_COMMAND_DATA =  "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'setTvChannel', 'arguments': "
-           API_COMMAND_ARG  = "['{}']}}]}}".format(command)
-           API_FULL = API_COMMAND_DATA + API_COMMAND_ARG
-           datacmd = API_FULL
+           cmdargs = ARGS_SET_CHANNEL.format(command)
+           datacmd = COMMAND_SET_CHANNEL + cmdargs
         elif cmdtype == "stepchannel": # steps channel up or down
            if command == "up":
               datacmd = COMMAND_CHANNEL_UP
@@ -184,10 +191,9 @@ class SmartThingsTV:
               datacmd = COMMAND_CHANNEL_DOWN
             
         if datacmd:
-           async with self._session.post(
+           await self._session.post(
                API_COMMAND,
                headers=_headers(self._api_key),
                data=datacmd,
                raise_for_status=True,
-           ) as resp:
-               cmdurl = await resp.json()
+           )

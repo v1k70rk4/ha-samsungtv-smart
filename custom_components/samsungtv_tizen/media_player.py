@@ -449,8 +449,8 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         # if update runs at list [UPDATE_SOURCE_INTERVAL] seconds after that source is changed,
         # we reset the timeout that wait for check new source, otherwise we wait next loop
-        # we assume that update of source in SmartThings take at least 5 seconds but in same case
-        # it can take longer and this can cause the source on UI to change a unexpectly
+        # we assume that update of source/channel in SmartThings take 5 seconds but in most case
+        # it take longer and this can cause the source on UI to return to previous value
         if self._last_source_time is not None:
             call_time = datetime.now()
             difference = (call_time - self._last_source_time).total_seconds()
