@@ -69,6 +69,7 @@ DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 3
 DEFAULT_UPDATE_METHOD = "ping"
 DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
+DEFAULT_APP = "TV/HDMI"
 CONF_UPDATE_METHOD = "update_method"
 CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
 CONF_SOURCE_LIST = "source_list"
@@ -82,8 +83,6 @@ KEY_PRESS_TIMEOUT = 0.5
 UPDATE_PING_TIMEOUT = 1
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
-UPDATE_STATUS_DELAY = 1
-UPDATE_SOURCE_INTERVAL = 5
 WS_CONN_TIMEOUT = 10
 POWER_OFF_DELAY = timedelta(seconds=20)
 
@@ -240,7 +239,6 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._token_file = None
         
         self._last_command_time = datetime.now()
-        self._last_source_time = None
 
         # Generate token file only for WS + SSL + Token connection
         if port == 8002:
@@ -353,7 +351,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                                     self._running_app = app
                                     return
 
-        self._running_app = 'TV/HDMI'
+        self._running_app = DEFAULT_APP
 
     def _gen_installed_app_list(self):
 
@@ -380,20 +378,14 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Return the current input source."""
         if self._state != STATE_OFF:
 
-            # if we change channel from UI, we wait for the update method to run before updating source
-            # this is done to give the required time to update the real status and provide correct feedback
-            # self._last_source_time is set in async_select_source method and reset by async_update
-            if self._last_source_time is not None:
-                return self._source
-                
             if self._st:
                 if self._st.state == STATE_OFF:
                     self._source = None
                 else:
-                    if self._running_app == "TV/HDMI":
+                    if self._running_app == DEFAULT_APP:
 
                         cloud_key = ""
-                        if self._st.source in ["digitalTv", "TV"]:
+                        if self._st.source in ["digitalTv", "TV"] or self._st.channel != "":
                             cloud_key = "ST_TV"
                         else:
                             cloud_key = "ST_" + self._st.source
@@ -447,16 +439,6 @@ class SamsungTVDevice(MediaPlayerDevice):
         if self._state == STATE_ON and not self._power_off_in_progress():
             self._get_running_app()        
 
-        # if update runs at list [UPDATE_SOURCE_INTERVAL] seconds after that source is changed,
-        # we reset the timeout that wait for check new source, otherwise we wait next loop
-        # we assume that update of source/channel in SmartThings take 5 seconds but in most case
-        # it take longer and this can cause the source on UI to return to previous value
-        if self._last_source_time is not None:
-            call_time = datetime.now()
-            difference = (call_time - self._last_source_time).total_seconds()
-            if difference >= UPDATE_SOURCE_INTERVAL: 
-                self._last_source_time = None
-            
         if self._state == STATE_OFF:
             self._end_of_power_off = None 
 
@@ -524,7 +506,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             if self._st.state == STATE_OFF:
                 self._state = STATE_OFF
                 return None
-            elif self._running_app == "TV/HDMI":
+            elif self._running_app == DEFAULT_APP:
                 if self._st.source in ["digitalTv", "TV"]:
                     if self._st.channel_name != "" and self._st.channel != "":
                         if self._show_channel_number:
@@ -748,6 +730,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     async def async_select_source(self, source):
         """Select input source."""
+        running_app = DEFAULT_APP
         if source in self._source_list:
             source_key = self._source_list[ source ]
             if "+" in source_key:
@@ -770,10 +753,13 @@ class SamsungTVDevice(MediaPlayerDevice):
                 await self.hass.async_add_job(self.send_command, self._source_list[ source ])
         elif source in self._app_list:
             source_key = self._app_list[ source ]
+            running_app = source
             await self.hass.async_add_job(self.send_command, source_key, "run_app")
+            if self._st:
+                self._st.set_application(self._app_list_ST[ source ])
         else:
             _LOGGER.error("Unsupported source")
             return
             
-        self._last_source_time = datetime.now()
+        self._running_app = running_app
         self._source = source

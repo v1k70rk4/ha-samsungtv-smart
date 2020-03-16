@@ -65,9 +65,9 @@ class SmartThingsTV:
         self._muted = False
         self._volume = 10
         self._source_list = None
-        self._source = None
-        self._channel = None
-        self._channel_name = None
+        self._prev_source = self._source = None
+        self._prev_channel = self._channel = None
+        self._prev_channel_name = self._channel_name = None
 
     @property
     def api_key(self) -> str:
@@ -109,6 +109,10 @@ class SmartThingsTV:
         """Return currently channel_name."""
         return self._channel_name
 
+    def set_application(self, appid):
+        self._channel = ""
+        self._channel_name = appid
+    
     async def async_device_update(self):
 
         API_DEVICE = API_DEVICES + self._device_id
@@ -132,12 +136,12 @@ class SmartThingsTV:
 
         _LOGGER.debug(data)
 
+        device_state = data['main']['switch']['value']
         device_volume = data['main']['volume']['value']
         device_volume = int(device_volume) / 100
-        device_state = data['main']['switch']['value']
-        device_source = data['main']['inputSource']['value']
-        device_all_sources = json.loads(data['main']['supportedInputSources']['value'])
         device_muted = data['main']['mute']['value'] 
+        device_all_sources = json.loads(data['main']['supportedInputSources']['value'])
+        device_source = data['main']['inputSource']['value']
         device_tv_chan = data['main']['tvChannel']['value']
         device_tv_chan_name = data['main']['tvChannelName']['value']
 
@@ -151,9 +155,11 @@ class SmartThingsTV:
             self._muted = True
         else:
             self._muted = False
-        self._source = device_source
-        self._channel = device_tv_chan
-        self._channel_name = device_tv_chan_name
+            
+        if (self._prev_source != device_source or self._prev_channel != device_tv_chan or self._prev_channel_name != device_tv_chan_name):
+            self._source = self._prev_source = device_source
+            self._channel = self._prev_channel = device_tv_chan
+            self._channel_name = self._prev_channel_name = device_tv_chan_name
 
     async def async_send_command(self, command, cmdtype):
 
@@ -181,6 +187,10 @@ class SmartThingsTV:
         elif cmdtype == "selectsource": #changes source
            cmdargs = ARGS_SET_SOURCE.format(command)
            datacmd = COMMAND_SET_SOURCE + cmdargs
+           # set property to reflect new changes
+           self._source = command
+           self._channel = ""
+           self._channel_name = ""
         elif cmdtype == "selectchannel": #changes channel
            cmdargs = ARGS_SET_CHANNEL.format(command)
            datacmd = COMMAND_SET_CHANNEL + cmdargs
