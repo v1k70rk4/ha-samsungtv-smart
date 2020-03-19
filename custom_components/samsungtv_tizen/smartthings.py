@@ -1,11 +1,14 @@
 #Smartthings TV integration#
-import requests
+import asyncio
+from datetime import timedelta
+from async_timeout import timeout
 import logging
-from requests import ReadTimeout, ConnectTimeout, HTTPError, Timeout, ConnectionError
 from typing import Any, Dict, List, Optional
 from aiohttp import ClientSession
 import json
 import os
+
+from homeassistant.util import Throttle
 from homeassistant.const import (
     STATE_OFF,
     STATE_ON,
@@ -35,6 +38,7 @@ ARGS_SET_SOURCE  = "['{}']}}]}}"
 COMMAND_SET_CHANNEL =  "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'setTvChannel', 'arguments': "
 ARGS_SET_CHANNEL  = "['{}']}}]}}"
 
+MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=10)
 _LOGGER = logging.getLogger(__name__)
 
 def _headers(api_key: str) -> Dict[str, str]:
@@ -111,15 +115,30 @@ class SmartThingsTV:
         """Return currently channel_name."""
         return self._channel_name
 
+    @Throttle(MIN_TIME_BETWEEN_UPDATES)
+    async def _device_refresh(self, **kwargs):
+
+        API_DEVICE = API_DEVICES + self._device_id
+        API_COMMAND = API_DEVICE + "/commands"
+
+        if self._refresh_status:
+            with timeout(5):
+                await self._session.post(
+                    API_COMMAND,
+                    headers=_headers(self._api_key),
+                    data=COMMAND_REFRESH,
+                    raise_for_status=True,
+                )
+
     def set_application(self, appid):
         if self._refresh_status:
             self._channel = ""
             self._channel_name = appid
+            self._device_refresh()
 
     async def async_device_update(self):
 
         API_DEVICE = API_DEVICES + self._device_id
-        API_COMMAND = API_DEVICE + "/commands"
         API_DEVICE_HEALT = API_DEVICE + "/health"
         API_DEVICE_STATUS = API_DEVICE + "/states"
         API_DEVICE_MAIN_STATUS = API_DEVICE + "/components/main/status" #not used, just for reference
@@ -140,13 +159,7 @@ class SmartThingsTV:
             self._state = STATE_OFF
             return
 
-        if self._refresh_status:
-            await self._session.post(
-                API_COMMAND,
-                headers=_headers(self._api_key),
-                data=COMMAND_REFRESH,
-                raise_for_status=True,
-            )
+        self._device_refresh()
 
         async with self._session.get(
             API_DEVICE_STATUS,
@@ -226,3 +239,6 @@ class SmartThingsTV:
                data=datacmd,
                raise_for_status=True,
            )
+           
+           self._device_refresh()
+
