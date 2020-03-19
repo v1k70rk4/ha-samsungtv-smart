@@ -134,7 +134,6 @@ class SmartThingsTV:
         if self._refresh_status:
             self._channel = ""
             self._channel_name = appid
-            self._device_refresh()
 
     async def async_device_update(self):
 
@@ -159,7 +158,7 @@ class SmartThingsTV:
             self._state = STATE_OFF
             return
 
-        self._device_refresh()
+        await self._device_refresh()
 
         async with self._session.get(
             API_DEVICE_STATUS,
@@ -240,5 +239,5 @@ class SmartThingsTV:
                raise_for_status=True,
            )
            
-           self._device_refresh()
+           await self._device_refresh()
 
