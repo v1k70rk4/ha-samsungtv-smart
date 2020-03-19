@@ -48,12 +48,14 @@ class SmartThingsTV:
             self,
             api_key: str,
             device_id: str,
+            refresh_status: bool = True,
             session: Optional[ClientSession] = None,
     ):
    
         """Initialize SmartThingsTV."""
         self._api_key = api_key
         self._device_id = device_id
+        self._refresh_status = refresh_status
         if session:
             self._session = session
             self._managed_session = False
@@ -66,8 +68,8 @@ class SmartThingsTV:
         self._volume = 10
         self._source_list = None
         self._prev_source = self._source = None
-        self._prev_channel = self._channel = None
-        self._prev_channel_name = self._channel_name = None
+        self._prev_channel = self._channel = ""
+        self._prev_channel_name = self._channel_name = ""
 
     @property
     def api_key(self) -> str:
@@ -110,22 +112,41 @@ class SmartThingsTV:
         return self._channel_name
 
     def set_application(self, appid):
-        self._channel = ""
-        self._channel_name = appid
-    
+        if self._refresh_status:
+            self._channel = ""
+            self._channel_name = appid
+
     async def async_device_update(self):
 
         API_DEVICE = API_DEVICES + self._device_id
         API_COMMAND = API_DEVICE + "/commands"
+        API_DEVICE_HEALT = API_DEVICE + "/health"
         API_DEVICE_STATUS = API_DEVICE + "/states"
         API_DEVICE_MAIN_STATUS = API_DEVICE + "/components/main/status" #not used, just for reference
 
-        await self._session.post(
-            API_COMMAND,
+        # this get the real status of the device
+        async with self._session.get(
+            API_DEVICE_HEALT,
             headers=_headers(self._api_key),
-            data=COMMAND_REFRESH,
             raise_for_status=True,
-        )
+        ) as resp:
+            health = await resp.json()
+
+        _LOGGER.debug(health)
+
+        if health['state'] == "ONLINE":
+            self._state = STATE_ON
+        else:
+            self._state = STATE_OFF
+            return
+
+        if self._refresh_status:
+            await self._session.post(
+                API_COMMAND,
+                headers=_headers(self._api_key),
+                data=COMMAND_REFRESH,
+                raise_for_status=True,
+            )
 
         async with self._session.get(
             API_DEVICE_STATUS,
@@ -145,10 +166,6 @@ class SmartThingsTV:
         device_tv_chan = data['main']['tvChannel']['value']
         device_tv_chan_name = data['main']['tvChannelName']['value']
 
-        if device_state == "off":
-            self._state = STATE_OFF
-        else:
-            self._state = STATE_ON
         self._volume = device_volume
         self._source_list = device_all_sources
         if device_muted == "mute":
@@ -158,8 +175,10 @@ class SmartThingsTV:
             
         if (self._prev_source != device_source or self._prev_channel != device_tv_chan or self._prev_channel_name != device_tv_chan_name):
             self._source = self._prev_source = device_source
-            self._channel = self._prev_channel = device_tv_chan
-            self._channel_name = self._prev_channel_name = device_tv_chan_name
+            # if the status is not refreshed this info may become not reliable
+            if self._refresh_status:
+                self._channel = self._prev_channel = device_tv_chan
+                self._channel_name = self._prev_channel_name = device_tv_chan_name
 
     async def async_send_command(self, command, cmdtype):
 

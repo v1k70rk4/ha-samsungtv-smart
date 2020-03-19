@@ -213,6 +213,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._update_custom_ping_url = update_custom_ping_url
         self._broadcast = broadcast
         self._scan_app_http = scan_app_http
+        self._session = session
         
         self._source = None
         self._source_list = json.loads(source_list)
@@ -263,6 +264,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._st = SmartThingsTV(
                 api_key = api_key,
                 device_id = device_id,
+                refresh_status = True, # may became a config option to limit write on the cloud???
                 session = session
             )
 
@@ -322,7 +324,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         else:
             self.send_command("KEY", "send_key", 1, 0)
 
-    def _get_running_app(self):
+    async def _get_running_app(self):
 
         if self._app_list is not None:
 
@@ -332,24 +334,36 @@ class SamsungTVDevice(MediaPlayerDevice):
                         self._running_app = attr
                         return
 
-            if self._scan_app_http:
+            # this method, due to the fact that is in the local LAN and using aiohttp, is very very fast (less than 1 sec) 
+            # and more immediate in result. The only issue is that in some case (eg. Prime Video) do not work
+            if self._session and self._scan_app_http:
+            
+                _LOGGER.debug("Start getting running app...")
                 for app in self._app_list:
 
-                    r = None
+                    data = None
 
                     try:
-                        r = requests.get('http://{host}:8001/api/v2/applications/{value}'.format(host=self._host, value=self._app_list[app]), timeout=0.5)
-                    except requests.exceptions.RequestException as e:
-                        pass
+                        with timeout(0.5):
+                            async with self._session.get(
+                                "http://{host}:8001/api/v2/applications/{value}".format(host=self._host, value=self._app_list[app]),
+                                raise_for_status=False,
+                            ) as resp:
+                                data = await resp.text()
+                    except (asyncio.TimeoutError, ClientConnectionError) as ex:
+                        _LOGGER.error("Error getting HTTP info for app: " + app)
+                        break # if we have exceptions here is because TV is not reachable, there are no reason to continue the loop
 
-                    if r is not None:
-                        data = r.text
-                        if data is not None:
-                            root = json.loads(data.encode('UTF-8'))
-                            if 'visible' in root:
-                                if root['visible']:
-                                    self._running_app = app
-                                    return
+                    if data is not None:
+                        root = json.loads(data.encode('UTF-8'))
+                        if 'visible' in root:
+                            if root['visible']:
+                                self._running_app = app
+                                _LOGGER.debug("... end getting tunning app - found app: " + app)
+                                return
+
+                _LOGGER.debug("... end getting app list - no app found.")
+
 
         self._running_app = DEFAULT_APP
 
@@ -437,7 +451,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._ping_device()
 
         if self._state == STATE_ON and not self._power_off_in_progress():
-            self._get_running_app()        
+            await self._get_running_app()
 
         if self._state == STATE_OFF:
             self._end_of_power_off = None 
@@ -498,7 +512,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def media_title(self):
         """Title of current playing media."""
-        if self._state == STATE_OFF and self._update_method != "smartthings":
+        if self._state == STATE_OFF: #and self._update_method != "smartthings":
             return None
 
         if self._st:
