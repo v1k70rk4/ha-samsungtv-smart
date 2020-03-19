@@ -299,13 +299,10 @@ class SamsungTVDevice(MediaPlayerDevice):
             and self._end_of_power_off > dt_util.utcnow()
         )
 
-    def _ping_device(self):
+    def _ping_device(self, force_ping = False):
         # HTTP ping
-        if self._update_method == "smartthings" and self._st:
 
-            self._state = self._st.state
-
-        elif self._is_ws_connection and self._update_method == "ping":
+        if self._is_ws_connection and (self._update_method == "ping" or force_ping):
 
             try:
                 ping_url = "http://{}:8001/api/v2/".format(self._host)
@@ -319,6 +316,10 @@ class SamsungTVDevice(MediaPlayerDevice):
                 self._state = STATE_ON
             except:
                 self._state = STATE_OFF
+
+        elif self._update_method == "smartthings" and self._st:
+
+            self._state = self._st.state
 
         # WS ping
         else:
@@ -608,7 +609,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 else:
                     wakeonlan.send_magic_packet(self._mac)
                 time.sleep(2)
-                self._ping_device()
+                self._ping_device(force_ping = True)
             else:
                 self.send_command("KEY_POWERON")
 

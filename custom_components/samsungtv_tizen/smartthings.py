@@ -122,13 +122,12 @@ class SmartThingsTV:
         API_COMMAND = API_DEVICE + "/commands"
 
         if self._refresh_status:
-            with timeout(5):
-                await self._session.post(
-                    API_COMMAND,
-                    headers=_headers(self._api_key),
-                    data=COMMAND_REFRESH,
-                    raise_for_status=True,
-                )
+            await self._session.post(
+                API_COMMAND,
+                headers=_headers(self._api_key),
+                data=COMMAND_REFRESH,
+                raise_for_status=True,
+            )
 
     def set_application(self, appid):
         if self._refresh_status:
