@@ -63,18 +63,29 @@ CONF_SHOW_CHANNEL_NR = "show_channel_number"
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=15)
 
-
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 3
 DEFAULT_UPDATE_METHOD = "ping"
-DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
-DEFAULT_APP = "TV/HDMI"
 CONF_UPDATE_METHOD = "update_method"
 CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
 CONF_SOURCE_LIST = "source_list"
 CONF_APP_LIST = "app_list"
 CONF_SCAN_APP_HTTP = "scan_app_http"
+
+DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
+DEFAULT_APP = "TV/HDMI"
+
+STD_APP_LIST = {
+    # app_id: smartthings app id (if different and available)
+    "org.tizen.browser": "",                    #Internet
+    "11101200001": "org.tizen.netflix-app",     #Netflix
+    "111299001912": "9Ur5IzDKqV.TizenYouTube",  #YouTube
+    "3201512006785": "org.tizen.ignition",      #Prime Video
+    "11091000000": "4ovn894vo9.Facebook",       #Facebook 
+    "3201601007250": "QizQxC7CUf.PlayMovies",   #Google Play
+    "3201606009684": "rJeHak5zRg.Spotify",      #Spotify
+}
 
 KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 MEDIA_TYPE_KEY = "send_key"
@@ -83,7 +94,9 @@ KEY_PRESS_TIMEOUT = 0.5
 UPDATE_PING_TIMEOUT = 1
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
+WS_PREFIX = "[Home Assistant]"
 WS_CONN_TIMEOUT = 10
+ST_APP_SEPARATOR = "/"
 POWER_OFF_DELAY = timedelta(seconds=20)
 
 SUPPORT_SAMSUNGTV = (
@@ -247,7 +260,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._gen_token_file()
 
         self._ws = SamsungTVWS(
-            name=name,
+            name=WS_PREFIX + " " + name, # this is the name shown in the TV list of external device.
             host=host,
             port=port,
             timeout=self._timeout,
@@ -269,14 +282,19 @@ class SamsungTVDevice(MediaPlayerDevice):
                 session = session
             )
 
-    def _split_app_list(self, app_list, sep = "/"):
+    def _split_app_list(self, app_list, sep = ST_APP_SEPARATOR):
         retval = {"app": {}, "appST": {}}
         
         for attr, value in app_list.items():
             value_split = value.split(sep, 1)
-            idx = 1 if len(value_split) > 1 else 0
-            retval["app"].update({attr: value_split[0]})
-            retval["appST"].update({attr: value_split[idx]})
+            app_id = value_split[0]
+            if len(value_split) == 1:
+                st_app_id = STD_APP_LIST.get(app_id, "")
+                st_app_id = st_app_id if st_app_id != "" else app_id
+            else:
+                st_app_id = value_split[1]
+            retval["app"].update({attr: app_id})
+            retval["appST"].update({attr: st_app_id})
             
         return retval
 
@@ -398,23 +416,45 @@ class SamsungTVDevice(MediaPlayerDevice):
     def _gen_installed_app_list(self):
         if self._state == STATE_OFF:
             _LOGGER.debug("Samsung TV is OFF, _gen_installed_app_list not executed")
-            self._app_list = {}
-            self._app_list_ST = {}
             return
 
         app_list = self._ws.app_list()
 
         # app_list is a list of dict
-        clean_app_list = {}
+        clean_app_list = {} 
+        clean_app_list_ST = {} 
+        dump_app_list = {}
         for i in range(len(app_list)):
             try:
                 app = app_list[i]
-                clean_app_list[ app.get('name') ] = app.get('appId')
+                app_name = app.get('name')
+                app_id = app.get('appId')
+                full_app_id = app_id
+                st_app_id = STD_APP_LIST.get(app_id, "###")
+                # app_list is automatically created only with apps in hard coded short list (STD_APP_LIST)
+                # other available apps are dumped in a file that can be used to create a custom list 
+                # this is to avoid unuseful long list that can impact performance
+                if st_app_id != "###":
+                    clean_app_list[ app_name ] = app_id
+                    clean_app_list_ST[ app_name ] = st_app_id if st_app_id != "" else app_id
+                    full_app_id = app_id + ST_APP_SEPARATOR + st_app_id if st_app_id != "" else app_id
+
+                dump_app_list[ app_name ] = full_app_id
+
             except Exception:
                 pass
 
-        self._app_list_ST = self._app_list = clean_app_list
-        _LOGGER.debug("Gen installed app_list %s", clean_app_list)
+        self._app_list = clean_app_list
+        self._app_list_ST = clean_app_list_ST
+        try:
+            dump_file_name = os.path.dirname(os.path.realpath(__file__)) + '/applist-' + self._host + '.txt'
+            with open(dump_file_name, 'w') as dump_file:
+                dump_file.write('app_list: "' + str(dump_app_list) + '"')
+        except Exception:
+            _LOGGER.error("Failed to write dump apps file")
+            pass
+                
+        _LOGGER.debug("Dump of available apps:%s", dump_app_list)
 
     def _get_source(self):
         """Return the current input source."""
