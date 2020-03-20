@@ -430,12 +430,12 @@ class SamsungTVDevice(MediaPlayerDevice):
                 await self._st.async_send_command(source_key.replace("ST_", ""), "selectsource")
             elif source_key == "ST_TV":
                 await self._st.async_send_command("digitalTv", "selectsource")
-            elif source_key.startswith("ST_CH"):
-                await self._st.async_send_command(source_key.replace("ST_CH", ""), "selectchannel")
             elif source_key == "ST_CHUP":
                 await self._st.async_send_command("up", "stepchannel")
             elif source_key == "ST_CHDOWN":
                 await self._st.async_send_command("down", "stepchannel")
+            elif source_key.startswith("ST_CH"):
+                await self._st.async_send_command(source_key.replace("ST_CH", ""), "selectchannel")
 
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     async def async_update(self):
