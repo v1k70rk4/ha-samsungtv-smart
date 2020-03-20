@@ -216,6 +216,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._session = session
         
         self._source = None
+        self._default_source_used = (source_list == DEFAULT_SOURCE_LIST)
         self._source_list = json.loads(source_list)
         self._running_app = None
         if app_list is not None:
@@ -368,12 +369,38 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         self._running_app = DEFAULT_APP
 
-    def _gen_installed_app_list(self):
+    def _get_st_sources(self):
+        if self._state == STATE_OFF or not self._st:
+            _LOGGER.debug("Samsung TV is OFF or SmartThings not configured, _get_st_sources not executed")
+            return
+            
+        st_source_list = {}
+        source_list = self._st._source_list
+        if source_list:
+            for i in range(len(source_list)):
+                try:
+                    # SmartThings source list is an array in which the odd element is the real input,
+                    # the pair element is the name assigned, so we skip pair (used for source key in the loop)
+                    if ((i+1) % 2) == 0:
+                        continue
+                    if source_list[i] in ["digitalTv", "TV"]:
+                        st_source_list[ source_list[i+1] ] = "ST_TV"
+                    elif source_list[i].startswith("HDMI"):
+                        st_source_list[ source_list[i+1] ] = "ST_" + source_list[i]
+                except Exception:
+                    pass
 
+        if len(st_source_list) > 0:
+            _LOGGER.info("Samsung TV: loaded sources list from SmartThings: " + str(st_source_list))
+            self._source_list = st_source_list
+            self._default_source_used = False
+
+    def _gen_installed_app_list(self):
         if self._state == STATE_OFF:
-            _LOGGER.info("Samsung TV is OFF, _gen_installed_app_list not executed")
+            _LOGGER.debug("Samsung TV is OFF, _gen_installed_app_list not executed")
             self._app_list = {}
             self._app_list_ST = {}
+            return
 
         app_list = self._ws.app_list()
 
@@ -560,6 +587,10 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def source_list(self):
         """List of available input sources."""
+        # try to get source list from SmartThings if a custom source list is not defined
+        if self._st and self._default_source_used:
+            self._get_st_sources()
+            
         if self._app_list is None:
             self._gen_installed_app_list()
 
