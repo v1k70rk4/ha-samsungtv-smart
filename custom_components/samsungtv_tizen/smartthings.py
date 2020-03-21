@@ -51,13 +51,15 @@ class SmartThingsTV:
     def __init__(
             self,
             api_key: str,
-            device_id: str,
+            device_name: Optional[str] = None,
+            device_id: Optional[str] = None,
             refresh_status: bool = True,
             session: Optional[ClientSession] = None,
     ):
    
         """Initialize SmartThingsTV."""
         self._api_key = api_key
+        self._device_name = device_name
         self._device_id = device_id
         self._refresh_status = refresh_status
         if session:
@@ -79,6 +81,11 @@ class SmartThingsTV:
     def api_key(self) -> str:
         """Return currently api_key."""
         return self._api_key
+
+    @property
+    def device_name(self) -> str:
+        """Return currently device_name."""
+        return self._device_name
 
     @property
     def device_id(self) -> str:
@@ -115,10 +122,50 @@ class SmartThingsTV:
         """Return currently channel_name."""
         return self._channel_name
 
+    def set_application(self, appid):
+        if self._refresh_status:
+            self._channel = ""
+            self._channel_name = appid
+
+    async def _get_device_id(self):
+
+        if self._device_name and not self._device_id:
+
+            name = self._device_name
+            tv_name = "[TV] " + name
+            
+            try:
+                async with self._session.get(
+                    API_DEVICES,
+                    headers=_headers(self._api_key),
+                    raise_for_status=True,
+                ) as resp:
+                    device_list = await resp.json()
+            except:
+                device_list = None
+            
+            if device_list:
+                device_id = None
+                for k in device_list.get("items", {}):
+                    label = k.get("label", "")
+                    if label == name or label == tv_name:
+                        device_id = k.get("deviceId", None)
+                        break
+                
+                if device_id:
+                    self._device_id = device_id
+                    _LOGGER.debug("SmartThings device ID: %s", device_id)
+        
+        return self._device_id
+
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def _device_refresh(self, **kwargs):
 
-        API_DEVICE = API_DEVICES + self._device_id
+        device_id = await self._get_device_id()
+        if not device_id:
+            return
+
+        API_DEVICE = API_DEVICES + device_id
         API_COMMAND = API_DEVICE + "/commands"
 
         if self._refresh_status:
@@ -129,14 +176,13 @@ class SmartThingsTV:
                 raise_for_status=True,
             )
 
-    def set_application(self, appid):
-        if self._refresh_status:
-            self._channel = ""
-            self._channel_name = appid
-
     async def async_device_update(self):
 
-        API_DEVICE = API_DEVICES + self._device_id
+        device_id = await self._get_device_id()
+        if not device_id:
+            return
+
+        API_DEVICE = API_DEVICES + device_id
         API_DEVICE_HEALT = API_DEVICE + "/health"
         API_DEVICE_STATUS = API_DEVICE + "/states"
         API_DEVICE_MAIN_STATUS = API_DEVICE + "/components/main/status" #not used, just for reference
@@ -193,7 +239,11 @@ class SmartThingsTV:
 
     async def async_send_command(self, command, cmdtype):
 
-        API_DEVICE = API_DEVICES + self._device_id
+        device_id = await self._get_device_id()
+        if not device_id:
+            return
+
+        API_DEVICE = API_DEVICES + device_id
         API_COMMAND = API_DEVICE + "/commands"
         datacmd = None
 

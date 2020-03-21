@@ -67,6 +67,7 @@ DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 3
 DEFAULT_UPDATE_METHOD = "ping"
+CONF_DEVICE_NAME = "device_name"
 CONF_UPDATE_METHOD = "update_method"
 CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
 CONF_SOURCE_LIST = "source_list"
@@ -123,6 +124,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_UPDATE_CUSTOM_PING_URL): cv.string,
         vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string,
         vol.Optional(CONF_APP_LIST): cv.string,
+        vol.Optional(CONF_DEVICE_NAME): cv.string,
         vol.Optional(CONF_DEVICE_ID): cv.string,
         vol.Optional(CONF_API_KEY): cv.string,
         vol.Optional(CONF_SHOW_CHANNEL_NR, default=False): cv.boolean,
@@ -159,6 +161,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         source_list = config.get(CONF_SOURCE_LIST)
         app_list = config.get(CONF_APP_LIST)
         api_key = config.get(CONF_API_KEY)
+        device_name = config.get(CONF_DEVICE_NAME)
         device_id = config.get(CONF_DEVICE_ID)
         show_channel_number = config.get(CONF_SHOW_CHANNEL_NR)
         scan_app_http = config.get(CONF_SCAN_APP_HTTP)
@@ -186,7 +189,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     ip_addr = socket.gethostbyname(host)
     if ip_addr not in known_devices:
         known_devices.add(ip_addr)
-        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list, app_list, api_key, device_id, show_channel_number, broadcast, scan_app_http, session)])
+        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list, app_list, api_key, device_name, device_id, show_channel_number, broadcast, scan_app_http, session)])
         _LOGGER.info("Samsung TV %s:%d added as '%s'", host, port, name)
     else:
         _LOGGER.info("Ignoring duplicate Samsung TV %s:%d", host, port)
@@ -208,6 +211,7 @@ class SamsungTVDevice(MediaPlayerDevice):
              source_list, 
              app_list, 
              api_key, 
+             device_name, 
              device_id, 
              show_channel_number, 
              broadcast, 
@@ -274,9 +278,10 @@ class SamsungTVDevice(MediaPlayerDevice):
         )
         
         self._st = None
-        if api_key and device_id:
+        if api_key and (device_name or device_id):
             self._st = SmartThingsTV(
                 api_key = api_key,
+                device_name = device_name,
                 device_id = device_id,
                 refresh_status = True, # may became a config option to limit write on the cloud???
                 session = session
