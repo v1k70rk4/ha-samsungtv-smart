@@ -89,7 +89,7 @@ Edit it by adding the following lines:
     (json)(Optional)<br/>
     This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
     Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
-    If SmartThings is configured (see below), the component will try to identify and configure automatically the sources configured on the TV with the relative assigned names (new feature, tested on QLed TV).
+    If SmartThings is configured (see below), the component will try to identify and configure automatically the sources configured on the TV with the relative assigned names (new feature, tested on QLed TV).<br/>
     You can also chain KEYS, example: '{"TV": "KEY_SOURCES+KEY_ENTER"}'<br/>
     And even add delays (in milliseconds) between sending KEYS, example:<br/>
     '{"TV": "KEY_SOURCES+500+KEY_ENTER"}'<br/>
