@@ -32,13 +32,11 @@ This project is a fork of the control [SamsungTV Tizen](https://github.com/jarub
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
 
-
 # Installation
 
 ### 1. Easy Mode
 
 Install via HACS.
-
 
 ### 2. Manual
 
@@ -62,7 +60,6 @@ After a correct installation, your configuration directory should look like the 
             └── exceptions.py
             └── ...
     ```
-
 
 # Configuration
 
@@ -90,72 +87,73 @@ After a correct installation, your configuration directory should look like the 
 2. Restart Home Assistant.
 3. Congrats! You're all set!
 
+# Custom configuration parameters
 
-### Custom configuration variables
+You can configure additional option for the component using configuration variable in `configuration.yaml` section.<br/>
+Some of this option are available only during component configuration because are stored in the registry during setup phase, other can be changed in `configuration.yaml` at any moment.<br/>
 
-   **You can configure additional option for the component using configuration variable in `configuration.yaml` section. Some of this option are available only during component creation, other can be set at any moment**
+**api_key:**<br/>
+(string)(Optional)<br/>
+API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md#smartthings-keys))<br/>
+Read [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md)<br/>
+This parameter can also be provided during the component configuration using the user interface.<br/>
+**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must before delete the integration from UI.**<br/>
 
-   **api_key:**<br/>
-    (string)(Optional)<br/>
-    API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md#smartthings-keys))<br/>
-    [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md)<br/>
+**device_name:**<br/>
+(string)(Optional)<br/>
+This is an optional value, normally is automatically dected during setup phase and so is not required to specify it. You should try to configure this parameter only if the setup fail in the detection.<br/>
+The device_name can be read using the TV Menu, normally select the menu General -> System Options<br/>
+**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must before delete the integration from UI.**<br/>
 
-   **device_name:**<br/>
-    (string)(Optional)<br/>
-    Although this is an optional value, it is mandatory if you've set a SmartThings API Key in order to identify your device in the API. If you not configure the device_name, you can configure the device_id as alternative option (see next param)<br/>
-    The device_name can be read using the TV Menu, normally select the menu General -> System Options<br/>
-    _You must set both an `api_key` and `device_name` or `device_id` to enable the SmartThings Cloud API_<br/>
-
-   **update_method:**<br/>
-    (string)(Optional)<br/>
-    This change the ping method used for state update. Values: "ping", "websockets" and "smartthings"<br/>
-    Default value: "ping"<br/>
-    If SmartThings is enbled, is strongly suggested to set this parameter to "smartthings"<br/>
-    Example value: "websockets"<br/>
+**update_method:**<br/>
+(string)(Optional)<br/>
+This change the ping method used for state update. Values: "ping", "websockets" and "smartthings"<br/>
+Default value: "ping" if SmartThings is not enabled, else "smartthings"<br/>
+Example update_method: "websockets"<br/>
     
-   **update_custom_ping_url:**<br/>
-    (string)(Optional)<br/>
-    Use custom endpoint to ping.<br/>
-    Default value: PING TO 8001 ENDPOINT<br/>
-    Example value: "http://192.168.1.77:9197/dmr"<br/>
+**update_custom_ping_url:**<br/>
+(string)(Optional)<br/>
+Use custom endpoint to ping.<br/>
+Default value: PING TO 8001 ENDPOINT<br/>
+Example update_custom_ping_url: "http://192.168.1.77:9197/dmr"<br/>
     
-   **source_list:**<br/>
-    (json)(Optional)<br/>
-    This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
-    Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
-    If SmartThings is configured (see below), the component will try to identify and configure automatically the sources configured on the TV with the relative assigned names (new feature, tested on QLed TV).<br/>
-    You can also chain KEYS, example: '{"TV": "KEY_SOURCES+KEY_ENTER"}'<br/>
-    And even add delays (in milliseconds) between sending KEYS, example:<br/>
+**source_list:**<br/>
+(json)(Optional)<br/>
+This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
+Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
+If SmartThings is [configured]((https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md) and the source_list not, the component will try to identify and configure automatically the sources configured on the TV with the relative associated names (new feature, tested on QLed TV). The created list is available in the HA log file.<br/>
+You can also chain KEYS, example: '{"TV": "KEY_SOURCES+KEY_ENTER"}'<br/>
+And even add delays (in milliseconds) between sending KEYS, example:<br/>
     '{"TV": "KEY_SOURCES+500+KEY_ENTER"}'<br/>
-    Resources: [key codes](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Key_codes.md) / [key patterns](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Key_chaining.md)<br/>
-    **Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings) (under "Mode Settings")**<br/>
+Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Key_codes.md) / [key patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Key_chaining.md)<br/>
+**Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings) (under "Mode Settings")**<br/>
     
-   **app_list:**<br/>
-    (json)(Optional)<br/>
-    This contains the APPS visible sources in the dropdown list in media player UI.<br/>
-    Default value: AUTOGENERATED<br/>
-    Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'<br/>
-    Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), [List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
-    **Note: For advanced use of this setting, read the [app_list guide](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/App_list.md)**<br/>
-    **Note 2: Although this setting is optional, it is highly recommended (for best performance) to set it manually and not rely on the autogenerated list.**<br/>
-    **Note 3: Autogenerated list now is limited to few application (the normally most used). To have other applications, the list must be set manually. The component during the startup, if the source_list is not configured, generate a file in the custom component folder with the list of all available applications. This list can be used to create a manual list following the rules explained before..**<br/>
+**app_list:**<br/>
+(json)(Optional)<br/>
+This contains the APPS visible sources in the dropdown list in media player UI.<br/>
+Default value: AUTOGENERATED<br/>
+Autogenerated list is limited to few application (the normally most used). To have other applications, the list must be set manually.
+If the source_list is not configured, during startup is generated a file in the custom component folder with the list of all available applications. This list can be used to create a manual list following [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/App_list.md)<br/>
+Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'<br/>
+Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), [List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
+**Note: Although this setting is optional, it is highly recommended (for best performance) to set it manually and not rely on the autogenerated list.**<br/>
 
-   **show_channel_number:**<br/>
-    (boolean)(Optional)<br/>
-    If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media titles, by setting this to True the TV Channel Number will also be attached to the end of the media title. (when applicable)
+**show_channel_number:**<br/>
+(boolean)(Optional)<br/>
+If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media titles, by setting this to True the TV Channel Number will also be attached to the end of the media title. (when applicable)
 
-   **scan_app_http:**<br/>
-    (boolean)(Optional)<br/>
-    This option is `True` by default. In some cases (if numerical IDs are used when setting `app_list`) HTTP polling will be used (1 request per app) to get the running app.<br/>
-    This is a lengthy task that some may want to disable, you can do so by setting this option to `False`.<br/>
-    For more information about how we get the running app, read the [app_list guide](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/App_list.md).<br/>
+**scan_app_http:**<br/>
+(boolean)(Optional)<br/>
+This option is `True` by default. In some cases (if numerical IDs are used when setting `app_list`) HTTP polling will be used (1 request per app) to get the running app.<br/>
+This is a lengthy task that some may want to disable, you can do so by setting this option to `False`.<br/>
+For more information about how we get the running app, read the [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/App_list.md).<br/>
 
-   **broadcast_address:**<br/>
-    (string)(Optional)<br/>
-    **Do not set this option if you do not know what it does, it can break turning your TV on.**<br/>
-    The ip address of the host to send the magic packet (for wakeonlan) to if the "mac" property is also set.<br/>
-    Default value: "255.255.255.255"<br/>
-    Example value: "192.168.1.255"<br/>
+**broadcast_address:**<br/>
+(string)(Optional)<br/>
+**Do not set this option if you do not know what it does, it can break turning your TV on.**<br/>
+The ip address of the host to send the magic packet (for wakeonlan) to if the "mac" property is also set.<br/>
+Default value: "255.255.255.255"<br/>
+Example value: "192.168.1.255"<br/>
 
 
 # Usage
