@@ -1,28 +1,44 @@
-# HomeAssistant - SamsungTV Tizen Component
+# HomeAssistant - SamsungTV Smart Component
 
 ***Enable SmartThings***
 ---------------
 
-**Warning: It is very important to follow this guide to the letter, many users do not follow it correctly and (for example) they try adding the "Device Network ID" instead of `device_id`, then say the component does not work. So follow this guide EXACTLY as it is written!**
+## Setup instructions
 
-Step 1: Make sure your TV is logged into your smart things account.
+### Create personal access token
 
-Step 2: Obtain an API key from https://account.smartthings.com/tokens
+1. Log into the [personal access tokens page](https://account.smartthings.com/tokens) and click '[Generate new token](https://account.smartthings.com/tokens/new)'
+2. Enter a token name (can be whatever you want), for example, 'Home Assistant' and select the following authorized scopes:
+    - Devices (all)
+    - Installed Apps (all)
+    - Locations (all)
+    - Apps (all)
+    - Schedules (all)
+    - Scenes (all)
+3. Click 'Generate token'. When the token is displayed, copy and save it somewhere safe (such as your keystore) as you will not be able to retrieve it again.
 
-Step 3: Go [here](https://graph-eu01-euwest1.api.smartthings.com/device/list) for your device id for each device. Click on the name of your TV and the device id will be in the URL:
+### Configure Home Assistant
 
-https://graph-eu01-euwest1.api.smartthings.com/device/show/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX
+#### Option a: using User Interface (suggested method)
 
-Step 4: In your `configuration.yaml` add:
+1. Make sure your TV is logged into your SmartThings account.
+2. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     'SamsungTV Smart' and click 'Configure'.
+3. In the configuration mask, enter the IP address of the TV, the name for the entity and the personal access token created above and click 'Submit'
+
+#### Option b: using `configuration.yaml`
+
+1. Make sure your TV is logged into your SmartThings account.
+2. In your `configuration.yaml` add:
 
 ```
-media_player:
-  - platform: samsungtv_tizen
+samsungtv_smart:
+  - host: <YOUR TV IP ADDRES>
     name: My TV name
-    api_key: "YOUR API KEY"
-    device_id: "YOUR DEVICE ID"
+    api_key: <YOUR SMARTTHINGS TOKEN>
     ...
 ```
+
+3. Restart Home Assistant.
 
 
 ***Benefits of Enabling SmartThings***
