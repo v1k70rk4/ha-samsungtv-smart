@@ -25,12 +25,10 @@ This project is a fork of the control [SamsungTV Tizen](https://github.com/jarub
 
 **Note**: To configure the component for using SmartThings (strongly suggested) use this [guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md).
 
-**Note2**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
-
 ### Option a: using User Interface (suggested method)
 
-1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     'SamsungTV Smart' and click 'Configure'.
-2. In the configuration mask, enter the IP address of the TV, the name for the entity and the personal access token created above and click 'Submit'
+1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     '**SamsungTV Smart**' and click 'Configure'.
+2. In the configuration mask, enter the IP address of the TV, the name for the entity and click 'Submit'
 3. Congrats! You're all set!
 
 ### Option b: using `configuration.yaml`
