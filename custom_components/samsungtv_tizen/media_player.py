@@ -4,7 +4,6 @@ from datetime import timedelta, datetime
 import logging
 import socket
 import json
-import voluptuous as vol
 import os
 import wakeonlan
 import websocket
@@ -16,17 +15,18 @@ from aiohttp import ClientConnectionError, ClientSession
 from async_timeout import timeout
 
 from .websockets import SamsungTVWS
-
 from .smartthings import SmartThingsTV
-
 from .upnp import upnp
 
+from homeassistant.util import dt as dt_util
 from homeassistant import util
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
+
 from homeassistant.components.media_player import (
     MediaPlayerDevice,
-    PLATFORM_SCHEMA,
     DEVICE_CLASS_TV,
 )
+
 from homeassistant.components.media_player.const import (
     MEDIA_TYPE_CHANNEL,
     SUPPORT_NEXT_TRACK,
@@ -43,61 +43,53 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_APP,
     MEDIA_TYPE_URL,
 )
+
 from homeassistant.const import (
     CONF_BROADCAST_ADDRESS,
     CONF_HOST,
+    CONF_ID,
     CONF_MAC,
     CONF_NAME,
     CONF_PORT,
     CONF_TIMEOUT,
     CONF_API_KEY,
-    CONF_DEVICE_ID,
     STATE_OFF,
     STATE_ON,
 )
-import homeassistant.helpers.config_validation as cv
-from homeassistant.util import dt as dt_util
 
-CONF_SHOW_CHANNEL_NR = "show_channel_number"
+from .const import (
+    DOMAIN,
+    BASE_URL,
+    DEFAULT_NAME,
+    DEFAULT_PORT,
+    DEFAULT_TIMEOUT,
+    DEFAULT_UPDATE_METHOD,
+    DEFAULT_SOURCE_LIST,
+    DEFAULT_APP,
+    CONF_DEVICE_NAME,
+    CONF_DEVICE_MODEL,
+    CONF_UPDATE_METHOD,
+    CONF_UPDATE_CUSTOM_PING_URL,
+    CONF_SOURCE_LIST,
+    CONF_APP_LIST,
+    CONF_SHOW_CHANNEL_NR,
+    CONF_SCAN_APP_HTTP,
+    STD_APP_LIST,
+    WS_PREFIX,
+)
 
-_LOGGER = logging.getLogger(__name__)
-SCAN_INTERVAL = timedelta(seconds=15)
-
-DEFAULT_NAME = "Samsung TV Remote"
-DEFAULT_PORT = 8001
-DEFAULT_TIMEOUT = 3
-DEFAULT_UPDATE_METHOD = "ping"
-CONF_DEVICE_NAME = "device_name"
-CONF_UPDATE_METHOD = "update_method"
-CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
-CONF_SOURCE_LIST = "source_list"
-CONF_APP_LIST = "app_list"
-CONF_SCAN_APP_HTTP = "scan_app_http"
-
-DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
-DEFAULT_APP = "TV/HDMI"
-
-STD_APP_LIST = {
-    # app_id: smartthings app id (if different and available)
-    "org.tizen.browser": "",                    #Internet
-    "11101200001": "org.tizen.netflix-app",     #Netflix
-    "111299001912": "9Ur5IzDKqV.TizenYouTube",  #YouTube
-    "3201512006785": "org.tizen.ignition",      #Prime Video
-    "11091000000": "4ovn894vo9.Facebook",       #Facebook 
-    "3201601007250": "QizQxC7CUf.PlayMovies",   #Google Play
-    "3201606009684": "rJeHak5zRg.Spotify",      #Spotify
-}
-
-KNOWN_DEVICES_KEY = "samsungtv_known_devices"
+#KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
 KEY_PRESS_TIMEOUT = 0.5
 UPDATE_PING_TIMEOUT = 1
+HTTP_APPCHECK_TIMEOUT = 1
+ST_APP_SEPARATOR = "/"
+WS_CONN_TIMEOUT = 10
+
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
-WS_PREFIX = "[Home Assistant]"
-WS_CONN_TIMEOUT = 10
-ST_APP_SEPARATOR = "/"
+MIN_TIME_BETWEEN_APP_SCANS = timedelta(seconds=60)
 POWER_OFF_DELAY = timedelta(seconds=20)
 
 SUPPORT_SAMSUNGTV = (
@@ -113,125 +105,60 @@ SUPPORT_SAMSUNGTV = (
     | SUPPORT_PLAY_MEDIA
 )
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_HOST): cv.string,
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-        vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
-        vol.Optional(CONF_MAC): cv.string,
-        vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-        vol.Optional(CONF_UPDATE_METHOD, default=DEFAULT_UPDATE_METHOD): cv.string,
-        vol.Optional(CONF_UPDATE_CUSTOM_PING_URL): cv.string,
-        vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string,
-        vol.Optional(CONF_APP_LIST): cv.string,
-        vol.Optional(CONF_DEVICE_NAME): cv.string,
-        vol.Optional(CONF_DEVICE_ID): cv.string,
-        vol.Optional(CONF_API_KEY): cv.string,
-        vol.Optional(CONF_SHOW_CHANNEL_NR, default=False): cv.boolean,
-        vol.Optional(CONF_BROADCAST_ADDRESS): cv.string,
-        vol.Optional(CONF_SCAN_APP_HTTP, default=True): cv.boolean,
-    }
-)
+_LOGGER = logging.getLogger(__name__)
+SCAN_INTERVAL = timedelta(seconds=15)
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
+async def async_setup_platform(
+    hass, config, add_entities, discovery_info=None
+):  # pragma: no cover
     """Set up the Samsung TV platform."""
-    known_devices = hass.data.get(KNOWN_DEVICES_KEY)
-    if known_devices is None:
-        known_devices = set()
-        hass.data[KNOWN_DEVICES_KEY] = known_devices
+    pass
 
-    uuid = None
-    # this 2 declaration are required for discovery_info != None
-    show_channel_number = False
-    scan_app_http = True
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up the Samsung TV from a config entry."""
 
     # session used by aiohttp
     session = hass.helpers.aiohttp_client.async_get_clientsession()
 
-    # Is this a manual configuration?
-    if config.get(CONF_HOST) is not None:
-        host = config.get(CONF_HOST)
-        port = config.get(CONF_PORT)
-        name = config.get(CONF_NAME)
-        mac = config.get(CONF_MAC)
-        broadcast = config.get(CONF_BROADCAST_ADDRESS)
-        timeout = config.get(CONF_TIMEOUT)
-        update_method = config.get(CONF_UPDATE_METHOD)
-        update_custom_ping_url = config.get(CONF_UPDATE_CUSTOM_PING_URL)
-        source_list = config.get(CONF_SOURCE_LIST)
-        app_list = config.get(CONF_APP_LIST)
-        api_key = config.get(CONF_API_KEY)
-        device_name = config.get(CONF_DEVICE_NAME)
-        device_id = config.get(CONF_DEVICE_ID)
-        show_channel_number = config.get(CONF_SHOW_CHANNEL_NR)
-        scan_app_http = config.get(CONF_SCAN_APP_HTTP)
-    elif discovery_info is not None:
-        tv_name = discovery_info.get("name")
-        model = discovery_info.get("model_name")
-        host = discovery_info.get("host")
-        name = f"{tv_name} ({model})"
-        port = DEFAULT_PORT
-        timeout = DEFAULT_TIMEOUT
-        update_method = DEFAULT_UPDATE_METHOD
-        update_custom_ping_url = None
-        source_list = DEFAULT_SOURCE_LIST
-        app_list = None
-        mac = None
-        udn = discovery_info.get("udn")
-        if udn and udn.startswith("uuid:"):
-            uuid = udn[len("uuid:") :]
-    else:
-        _LOGGER.warning("Cannot determine device")
-        return
+    host = config_entry.data[CONF_HOST]
+    config = config_entry.data.copy()
+    add_conf = hass.data[DOMAIN][host]
+    for attr, value in add_conf.items():
+        if value:
+            config[attr] = value
+    _LOGGER.debug(config)
 
-    # Only add a device once, so discovered devices do not override manual
-    # config.
-    ip_addr = socket.gethostbyname(host)
-    if ip_addr not in known_devices:
-        known_devices.add(ip_addr)
-        add_entities([SamsungTVDevice(host, port, name, timeout, mac, uuid, update_method, update_custom_ping_url, source_list, app_list, api_key, device_name, device_id, show_channel_number, broadcast, scan_app_http, session)])
-        _LOGGER.info("Samsung TV %s:%d added as '%s'", host, port, name)
-    else:
-        _LOGGER.info("Ignoring duplicate Samsung TV %s:%d", host, port)
+    async_add_entities([SamsungTVDevice(config, session)])
+    _LOGGER.info("Samsung TV %s:%d added as '%s'", host, config.get(CONF_PORT), config.get(CONF_NAME))
 
 
 class SamsungTVDevice(MediaPlayerDevice):
     """Representation of a Samsung TV."""
 
-    def __init__(
-             self, 
-             host, 
-             port, 
-             name, 
-             timeout, 
-             mac, 
-             uuid, 
-             update_method, 
-             update_custom_ping_url, 
-             source_list, 
-             app_list, 
-             api_key, 
-             device_name, 
-             device_id, 
-             show_channel_number, 
-             broadcast, 
-             scan_app_http,
-             session: Optional[ClientSession] = None,
-        ):
+    def __init__(self, config, session: ClientSession):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
-        self._host = host
-        self._name = name
-        self._show_channel_number = show_channel_number
-        self._timeout = timeout
-        self._mac = mac
-        self._update_method = update_method
-        self._update_custom_ping_url = update_custom_ping_url
-        self._broadcast = broadcast
-        self._scan_app_http = scan_app_http
         self._session = session
+        self._host = config.get(CONF_HOST)
+        self._name = config.get(CONF_NAME)
+        self._uuid = config.get(CONF_ID)
+        self._mac = config.get(CONF_MAC)
+        self._device_name = config.get(CONF_DEVICE_NAME)
+        self._device_model = config.get(CONF_DEVICE_MODEL)
+        self._show_channel_number = config.get(CONF_SHOW_CHANNEL_NR, False)
+        self._timeout = config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+        self._update_method = config.get(CONF_UPDATE_METHOD)
+        self._update_custom_ping_url = config.get(CONF_UPDATE_CUSTOM_PING_URL)
+        self._broadcast = config.get(CONF_BROADCAST_ADDRESS)
+        self._scan_app_http = config.get(CONF_SCAN_APP_HTTP, True)
         
+        port = config.get(CONF_PORT)
+        api_key = config.get(CONF_API_KEY)
+        device_id = None # not used anymore
+        source_list = config.get(CONF_SOURCE_LIST, DEFAULT_SOURCE_LIST)
+        app_list = config.get(CONF_APP_LIST)
+
         self._source = None
         self._default_source_used = (source_list == DEFAULT_SOURCE_LIST)
         self._source_list = json.loads(source_list)
@@ -244,7 +171,6 @@ class SamsungTVDevice(MediaPlayerDevice):
            self._app_list = None
            self._app_list_ST = None
 
-        self._uuid = uuid
         self._is_ws_connection = True if port in (8001, 8002) else False
         # Assume that the TV is not muted and volume is 0
         self._muted = False
@@ -264,8 +190,8 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._gen_token_file()
 
         self._ws = SamsungTVWS(
-            name=WS_PREFIX + " " + name, # this is the name shown in the TV list of external device.
-            host=host,
+            name=WS_PREFIX + " " + self._name, # this is the name shown in the TV list of external device.
+            host=self._host,
             port=port,
             timeout=self._timeout,
             key_press_delay=KEY_PRESS_TIMEOUT,
@@ -274,14 +200,14 @@ class SamsungTVDevice(MediaPlayerDevice):
         )
 
         self._upnp = upnp(
-            host=host
+            host=self._host
         )
         
         self._st = None
-        if api_key and (device_name or device_id):
+        if api_key and (self._device_name or device_id):
             self._st = SmartThingsTV(
                 api_key = api_key,
-                device_name = device_name,
+                device_name = self._device_name,
                 device_id = device_id,
                 refresh_status = True, # may became a config option to limit write on the cloud???
                 session = session
@@ -329,7 +255,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         if self._is_ws_connection and (self._update_method == "ping" or force_ping):
 
             try:
-                ping_url = "http://{}:8001/api/v2/".format(self._host)
+                ping_url = BASE_URL.format(host=self._host)
                 if self._update_custom_ping_url is not None:
                     ping_url = self._update_custom_ping_url
 
@@ -369,14 +295,14 @@ class SamsungTVDevice(MediaPlayerDevice):
                     data = None
 
                     try:
-                        with timeout(0.5):
+                        with timeout(HTTP_APPCHECK_TIMEOUT):
                             async with self._session.get(
-                                "http://{host}:8001/api/v2/applications/{value}".format(host=self._host, value=self._app_list[app]),
+                                f"{BASE_URL}applications/{self._app_list[app]}".format(host=self._host),
                                 raise_for_status=False,
                             ) as resp:
                                 data = await resp.text()
                     except (asyncio.TimeoutError, ClientConnectionError) as ex:
-                        _LOGGER.error("Error getting HTTP info for app: " + app)
+                        _LOGGER.warning("Error getting HTTP info for app: " + app)
                         break # if we have exceptions here is because TV is not reachable, there are no reason to continue the loop
 
                     if data is not None:
@@ -418,12 +344,25 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._source_list = st_source_list
             self._default_source_used = False
 
-    def _gen_installed_app_list(self):
+    @util.Throttle(MIN_TIME_BETWEEN_APP_SCANS)
+    def _gen_installed_app_list(self, **kwargs):
         if self._state == STATE_OFF:
             _LOGGER.debug("Samsung TV is OFF, _gen_installed_app_list not executed")
             return
 
-        app_list = self._ws.app_list()
+        _LOGGER.warning("Retrieving applications list from TV. It is suggested to define a manual app_list (see component documentation)!!!")
+
+        # temporary increase timeout
+        app_list = None
+        self._ws.timeout = 10
+        try:
+            app_list = self._ws.app_list()
+        except Exception:
+            _LOGGER.error("Error retrieving application list from TV. Method will be retried.")
+        self._ws.timeout = self._timeout
+        
+        if not app_list:
+            return
 
         # app_list is a list of dict
         clean_app_list = {} 
@@ -510,7 +449,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 await self._st.async_send_command(source_key.replace("ST_CH", ""), "selectchannel")
 
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
-    async def async_update(self):
+    async def async_update(self, **kwargs):
         """Update state of device."""
         
         """Required to get source and media title"""
@@ -521,7 +460,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             except (asyncio.TimeoutError, ClientConnectionError) as ex:
                 _LOGGER.error("Samsung TV - Error refreshing from SmartThings")
 
-        self._ping_device()
+        await self.hass.async_add_executor_job(self._ping_device)
 
         if self._state == STATE_ON and not self._power_off_in_progress():
             await self._get_running_app()
@@ -581,6 +520,10 @@ class SamsungTVDevice(MediaPlayerDevice):
     def name(self):
         """Return the name of the device."""
         return self._name
+
+    @property
+    def icon(self):
+        return "mdi:television"
 
     @property
     def media_title(self):
@@ -644,7 +587,8 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         source_list = []
         source_list.extend(list(self._source_list))
-        source_list.extend(list(self._app_list))
+        if self._app_list:
+            source_list.extend(list(self._app_list))
 
         return source_list
 
@@ -854,3 +798,19 @@ class SamsungTVDevice(MediaPlayerDevice):
             
         self._running_app = running_app
         self._source = source
+
+    @property
+    def device_info(self):
+        """Return a device description for device registry."""
+        _device_info = {
+            "identifiers": {(DOMAIN, f"{self._uuid}")},
+            "manufacturer": "Samsung",
+            "name": self.name,
+            "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
+        }
+        model = self._device_model if self._device_model else "Samsung TV"
+        if self._device_name:
+            model = "%s (%s)" % (model, self._device_name)
+        _device_info["model"] = model
+        
+        return _device_info

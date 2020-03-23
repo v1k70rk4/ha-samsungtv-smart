@@ -77,6 +77,12 @@ class SmartThingsTV:
         self._prev_channel = self._channel = ""
         self._prev_channel_name = self._channel_name = ""
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
+
     @property
     def api_key(self) -> str:
         """Return currently api_key."""
