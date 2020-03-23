@@ -1,4 +1,4 @@
-# HomeAssistant - SamsungTV Tizen Component
+# HomeAssistant - SamsungTV Smart Component
 
 This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra features.<br/>
 **This plugin is only for 2016+ TVs model!** (maybe all tizen family)
@@ -8,6 +8,7 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 # Additional Features:
 
+* Config Flow using Lovelace interface
 * Ability to send keys using a native Home Assistant service
 * Ability to send chained key commands using a native Home Assistant service
 * Supports Assistant commands (Google Home, should work with Alexa too, but untested)
@@ -23,10 +24,9 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 Edit it by adding the following lines:
     ```
     # Example configuration.yaml entry
-    media_player:
-      - platform: samsungtv_tizen
-        host: IP_ADDRESS
-        port: 8002
+    samsungtv_smart:
+      - host: IP_ADDRESS
+        name: Samsung TV
         mac: MAC_ADDRESS
     ```
     **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
