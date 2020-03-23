@@ -104,7 +104,6 @@ The device_name can be read using the TV Menu, normally select the menu General 
 (string)(Optional)<br/>
 This is an optional value, normally is automatically detected during setup phase and so is not required to specify it. You should try to configure this parameter only if the setup fail in the detection.<br/>
 The mac-address is used to turn on the TV. If you set it manually, you must find the right value from the TV Menu or from your network router.<br/>
-**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must before delete the integration from UI.**<br/>
 
 - **source_list:**<br/>
 (json)(Optional)<br/>
