@@ -16,13 +16,20 @@
 
 ### Configure Home Assistant
 
-#### Option a: using User Interface (suggested method)
+Once the SmartThings token has been generated, you need to configure the component with it in order to make it work.
+There are two ways of doing so:
+- Using the web interface (Lovelace) [**recommended**]
+- Manually editing the `configuration.yaml` file
+
+**Note:** if the component has been already configured for your TV, you must delete it from the HA web interface and then re-configure it to enable SmartThings integration.<br/>
+
+#### Option A: Configuration using the web UI [**recommended**]
 
 1. Make sure your TV is logged into your SmartThings account.
-2. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     'SamsungTV Smart' and click 'Configure'.
+2. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     '**SamsungTV Smart**' and click 'Configure'.
 3. In the configuration mask, enter the IP address of the TV, the name for the entity and the personal access token created above and click 'Submit'
 
-#### Option b: using `configuration.yaml`
+#### Option B: Configuration via editing `configuration.yaml`
 
 1. Make sure your TV is logged into your SmartThings account.
 2. In your `configuration.yaml` add:
