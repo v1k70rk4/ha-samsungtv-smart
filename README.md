@@ -1,10 +1,13 @@
-[![](https://img.shields.io/github/release/jaruba/ha-samsungtv-tizen/all.svg?style=for-the-badge)](https://github.com/jaruba/ha-samsungtv-tizen/releases)
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
-[![](https://img.shields.io/github/license/jaruba/ha-samsungtv-tizen?style=for-the-badge)](LICENSE)
-[![](https://img.shields.io/badge/MAINTAINER-%40jaruba-red?style=for-the-badge)](https://github.com/jaruba)
+[![](https://img.shields.io/github/release/ollo69/ha-samsungtv-smart/all.svg?style=for-the-badge)](https://github.com/ollo69/ha-samsungtv-smart/releases)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
+[![](https://img.shields.io/github/license/ollo69/ha-samsungtv-smart?style=for-the-badge)](LICENSE)
+[![](https://img.shields.io/badge/MAINTAINER-%40ollo69-red?style=for-the-badge)](https://github.com/ollo69)
 [![](https://img.shields.io/badge/COMMUNITY-FORUM-success?style=for-the-badge)](https://community.home-assistant.io)
 
-# HomeAssistant - SamsungTV Tizen Component
+##  **************** DOC MODIFICATION IN PROGRESS *****************
+<br/>
+
+# HomeAssistant - SamsungTV Smart Component
 
 This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra features.<br/>
 **This plugin is only for 2016+ TVs model!** (maybe all tizen family)
@@ -13,6 +16,7 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 # Additional Features:
 
+* Config Flow for component configuration using Lovelace interface
 * Ability to send keys using a native Home Assistant service
 * Ability to send chained key commands using a native Home Assistant service
 * Supports Assistant commands (Google Home, should work with Alexa too, but untested)
@@ -62,10 +66,9 @@ After a correct installation, your configuration directory should look like the 
 Edit it by adding the following lines:
     ```
     # Example configuration.yaml entry
-    media_player:
-      - platform: samsungtv_tizen
-        host: IP_ADDRESS
-        port: 8002
+    samsungtv_smart:
+      - host: IP_ADDRESS
+        name: Samsung TV
         mac: MAC_ADDRESS
     ```
     **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
