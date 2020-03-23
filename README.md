@@ -63,7 +63,7 @@ After a correct installation, your configuration directory should look like the 
 Once the component has been installed, you need to configure it in order to make it work.
 There are two ways of doing so:
 - Using the web interface (Lovelace) [**recommended**]
-- Manually editing the configuration.yaml file
+- Manually editing the `configuration.yaml` file
 
 **Note**: To configure the component for using SmartThings (strongly suggested) use this [guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md).
 
