@@ -12,11 +12,15 @@
 This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra features.<br/>
 **This plugin is only for 2016+ TVs model!** (maybe all tizen family)
 
+This project is a fork of the control [SamsungTV Tizen](https://github.com/jaruba/ha-samsungtv-tizen). I added some feature like the possibility to configure it using the HA user interface, simplifing the configuration process. I also added some code optimizition in the comunication layer using async aiohttp instead of request.
+</br>
+**Most part of the code and documentation available here come from the original project.**
+</br>
+
 **Development for this project relies solely on donations, so if you enjoy this component, please consider [becoming a patron](https://www.patreon.com/powder_tech) or [donating](https://powder.media/donate) to ensure it's continued survival.**
 
 # Additional Features:
 
-* Config Flow for component configuration using Lovelace interface
 * Ability to send keys using a native Home Assistant service
 * Ability to send chained key commands using a native Home Assistant service
 * Supports Assistant commands (Google Home, should work with Alexa too, but untested)
@@ -41,14 +45,14 @@ Install via HACS.
 Install it as you would do with any homeassistant custom component:
 
 1. Download `custom_components` folder.
-2. Copy the `samsungtv_tizen` directory within the `custom_components` directory of your homeassistant installation. The `custom_components` directory resides within your homeassistant configuration directory.
+1. Copy the `samsungtv_smart` directory within the `custom_components` directory of your homeassistant installation. The `custom_components` directory resides within your homeassistant configuration directory.
 **Note**: if the custom_components directory does not exist, you need to create it.
 After a correct installation, your configuration directory should look like the following.
     ```
     └── ...
     └── configuration.yaml
     └── custom_components
-        └── samsungtv_tizen
+        └── samsungtv_smart
             └── __init__.py
             └── media_player.py
             └── websockets.py
@@ -56,39 +60,66 @@ After a correct installation, your configuration directory should look like the 
             └── smartthings.py
             └── upnp.py
             └── exceptions.py
-            └── manifest.json
+            └── ...
     ```
 
 
 # Configuration
 
-1. Enable the component by editing the configuration.yaml file (within the config directory as well).
-Edit it by adding the following lines:
+**Note**: To configure the component for using SmartThings (strongly suggested) use this [guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md).
+
+**Note2**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
+
+### Option a: using User Interface (suggested method)
+
+1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     'SamsungTV Smart' and click 'Configure'.
+2. In the configuration mask, enter the IP address of the TV, the name for the entity and the personal access token created above and click 'Submit'
+3. Congrats! You're all set!
+
+### Option b: using `configuration.yaml`
+
+1. Enable the component by editing the configuration.yaml file (within the config directory as well). Edit it by adding the following lines:
+
     ```
-    # Example configuration.yaml entry
     samsungtv_smart:
-      - host: IP_ADDRESS
-        name: Samsung TV
-        mac: MAC_ADDRESS
+      - host: <YOUR TV IP ADDRES>
+        name: My TV name
+        ...
     ```
-    **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
 
-    ### Custom configuration variables
+2. Restart Home Assistant.
+3. Congrats! You're all set!
 
-    **update_method:**<br/>
+
+### Custom configuration variables
+
+   **You can configure additional option for the component using configuration variable in `configuration.yaml` section. Some of this option are available only during component creation, other can be set at any moment**
+
+   **api_key:**<br/>
+    (string)(Optional)<br/>
+    API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md#smartthings-keys))<br/>
+    [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md)<br/>
+
+   **device_name:**<br/>
+    (string)(Optional)<br/>
+    Although this is an optional value, it is mandatory if you've set a SmartThings API Key in order to identify your device in the API. If you not configure the device_name, you can configure the device_id as alternative option (see next param)<br/>
+    The device_name can be read using the TV Menu, normally select the menu General -> System Options<br/>
+    _You must set both an `api_key` and `device_name` or `device_id` to enable the SmartThings Cloud API_<br/>
+
+   **update_method:**<br/>
     (string)(Optional)<br/>
     This change the ping method used for state update. Values: "ping", "websockets" and "smartthings"<br/>
     Default value: "ping"<br/>
     If SmartThings is enbled, is strongly suggested to set this parameter to "smartthings"<br/>
     Example value: "websockets"<br/>
     
-    **update_custom_ping_url:**<br/>
+   **update_custom_ping_url:**<br/>
     (string)(Optional)<br/>
     Use custom endpoint to ping.<br/>
     Default value: PING TO 8001 ENDPOINT<br/>
     Example value: "http://192.168.1.77:9197/dmr"<br/>
     
-    **source_list:**<br/>
+   **source_list:**<br/>
     (json)(Optional)<br/>
     This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
     Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
@@ -99,7 +130,7 @@ Edit it by adding the following lines:
     Resources: [key codes](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Key_codes.md) / [key patterns](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Key_chaining.md)<br/>
     **Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings) (under "Mode Settings")**<br/>
     
-    **app_list:**<br/>
+   **app_list:**<br/>
     (json)(Optional)<br/>
     This contains the APPS visible sources in the dropdown list in media player UI.<br/>
     Default value: AUTOGENERATED<br/>
@@ -108,44 +139,24 @@ Edit it by adding the following lines:
     **Note: For advanced use of this setting, read the [app_list guide](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/App_list.md)**<br/>
     **Note 2: Although this setting is optional, it is highly recommended (for best performance) to set it manually and not rely on the autogenerated list.**<br/>
     **Note 3: Autogenerated list now is limited to few application (the normally most used). To have other applications, the list must be set manually. The component during the startup, if the source_list is not configured, generate a file in the custom component folder with the list of all available applications. This list can be used to create a manual list following the rules explained before..**<br/>
-    
-    **api_key:**<br/>
-    (string)(Optional)<br/>
-    API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Smartthings.md#smartthings-keys))<br/>
-    [How to get an API Key for SmartThings](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Smartthings.md)<br/>
-    _You must set both an `api_key` and `device_name` or `device_id` to enable the SmartThings Cloud API_<br/>
 
-    **device_name:**<br/>
-    (string)(Optional)<br/>
-    Although this is an optional value, it is mandatory if you've set a SmartThings API Key in order to identify your device in the API. If you not configure the device_name, you can configure the device_id as alternative option (see next param)<br/>
-    The device_name can be read using the TV Menu, normally select the menu General -> System Options<br/>
-    _You must set both an `api_key` and `device_name` or `device_id` to enable the SmartThings Cloud API_<br/>
-
-    **device_id:**<br/>
-    (string)(Optional)<br/>
-    Although this is an optional value, it is mandatory if you've set a SmartThings API Key in order to identify your device in the API. If you not configure the device_id, you can configure the device_name as alternative option (see previous param), that is more simple to identify.<br/>
-    [How to get a device ID from SmartThings](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Smartthings.md)<br/>
-    _You must set both an `api_key` and `device_name` or `device_id` to enable the SmartThings Cloud API_<br/>
-
-    **show_channel_number:**<br/>
+   **show_channel_number:**<br/>
     (boolean)(Optional)<br/>
     If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media titles, by setting this to True the TV Channel Number will also be attached to the end of the media title. (when applicable)
 
-    **scan_app_http:**<br/>
+   **scan_app_http:**<br/>
     (boolean)(Optional)<br/>
     This option is `True` by default. In some cases (if numerical IDs are used when setting `app_list`) HTTP polling will be used (1 request per app) to get the running app.<br/>
     This is a lengthy task that some may want to disable, you can do so by setting this option to `False`.<br/>
     For more information about how we get the running app, read the [app_list guide](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/App_list.md).<br/>
 
-    **broadcast_address:**<br/>
+   **broadcast_address:**<br/>
     (string)(Optional)<br/>
     **Do not set this option if you do not know what it does, it can break turning your TV on.**<br/>
     The ip address of the host to send the magic packet (for wakeonlan) to if the "mac" property is also set.<br/>
     Default value: "255.255.255.255"<br/>
     Example value: "192.168.1.255"<br/>
 
-2. Reboot Home Assistant
-3. Congrats! You're all set!
 
 # Usage
 
