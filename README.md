@@ -60,15 +60,20 @@ After a correct installation, your configuration directory should look like the 
 
 # Configuration
 
+Once the component has been installed, you need to configure it in order to make it work.
+There are two ways of doing so:
+- Using the web interface (Lovelace) [**recommended**]
+- Manually editing the configuration.yaml file
+
 **Note**: To configure the component for using SmartThings (strongly suggested) use this [guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md).
 
-### Option a: using User Interface (suggested method)
+### Option A: Configuration using the web UI [**recommended**]
 
 1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     '**SamsungTV Smart**' and click 'Configure'.
 2. In the configuration mask, enter the IP address of the TV, the name for the entity and click 'Submit'
 3. Congrats! You're all set!
 
-### Option b: using `configuration.yaml`
+### Option B: Configuration via editing `configuration.yaml`
 
 1. Enable the component by editing the configuration.yaml file (within the config directory as well). Edit it by adding the following lines:
 
