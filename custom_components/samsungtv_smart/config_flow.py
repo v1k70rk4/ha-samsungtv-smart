@@ -78,9 +78,9 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_UPDATE_METHOD: self._update_method
         }
         if self._api_key:
-            CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
+            self.CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
         else:
-            CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
+            self.CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
         
         _LOGGER.info("Configured new entity %s with host %s", self._title, self._host)
         return self.async_create_entry(title=self._title, data=data,)
