@@ -1,3 +1,5 @@
 {
-  "name": "SamsungTV Smart"
+  "name": "SamsungTV Smart",
+  "domains": ["media-player"],
+  "iot_class": "Cloud Polling"
 }
