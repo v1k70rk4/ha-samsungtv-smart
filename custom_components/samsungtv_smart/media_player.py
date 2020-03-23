@@ -10,6 +10,9 @@ import websocket
 import requests
 import time
 
+import voluptuous as vol
+import homeassistant.helpers.config_validation as cv
+
 from typing import Any, Dict, List, Optional
 from aiohttp import ClientConnectionError, ClientSession
 from async_timeout import timeout
@@ -804,7 +807,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Return a device description for device registry."""
         _device_info = {
             "identifiers": {(DOMAIN, f"{self._uuid}")},
-            "manufacturer": "Samsung",
+            "manufacturer": "Samsung Electronics",
             "name": self.name,
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
         }
