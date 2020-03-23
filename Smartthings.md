@@ -1,9 +1,6 @@
 # HomeAssistant - SamsungTV Smart Component
 
-***Enable SmartThings***
----------------
-
-## Setup instructions
+## ***Enable SmartThings*** - Setup instructions 
 
 ### Create personal access token
 
