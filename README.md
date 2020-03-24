@@ -67,12 +67,12 @@ There are two ways of doing so:
 
 **Important**: To complete the configuration procedure properly, you must be sure that your TV is turned on and connected to the LAN. Stay near to your TV during configuration because probably you will need to accept the access request that will prompt on your TV screen.
 
-**Note**: To configure the component for using SmartThings (strongly suggested) use this [guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md).
+**Note**: To configure the component for using SmartThings (strongly suggested) you need to generate an access token as explained in [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md). Also make sure your TV is logged into your SmartThings account before starting configuration.
 
 ### Option A: Configuration using the web UI [**recommended**]
 
 1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     '**SamsungTV Smart**' and click 'Configure'.
-2. In the configuration mask, enter the IP address of the TV, the name for the entity and click 'Submit'
+2. In the configuration mask, enter the IP address of the TV, the name for the Entity and the SmartThings personal access token (if created) and then click 'Submit'
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
 4. Congrats! You're all set!
 
@@ -83,6 +83,7 @@ There are two ways of doing so:
     samsungtv_smart:
       - host: <YOUR TV IP ADDRES>
         name: My TV name
+        api_key: <YOUR SMARTTHINGS TOKEN> #omit if not generated
         ...
     ```
 2. Restart Home Assistant.
