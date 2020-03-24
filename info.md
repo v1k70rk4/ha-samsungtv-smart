@@ -52,12 +52,20 @@ There are two ways of doing so:
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
 4. Congrats! You're all set!
 
-### For best performance you should now move the next section and at least configure app_list
+### For best performance you should now move to the next section to create a custom `app_list`.
 
 # Custom configuration parameters
 
 You can configure additional option for the component using configuration variable in `configuration.yaml` section.<br/>
 Some of this option are available only during component configuration because are stored in the registry during setup phase, other can be changed in `configuration.yaml` at any moment.<br/>
+
+Section in `configuration.yaml` file must always start with `host` as shown in the following example:
+    ```
+    samsungtv_smart:
+      - host: <YOUR TV IP ADDRES>
+        ...
+    ```
+Then you can add any of the following parameters:
 
 - **api_key:**<br/>
 (string)(Optional)<br/>
