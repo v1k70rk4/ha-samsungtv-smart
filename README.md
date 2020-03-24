@@ -65,9 +65,9 @@ There are two ways of doing so:
 - Using the web interface (Lovelace) [**recommended**]
 - Manually editing the `configuration.yaml` file
 
-**Important**: To complete the configuration procedure properly, you must be sure that your TV is turned on and connected to the LAN. Stay near to your TV during configuration because probably you will need to accept the access request that will prompt on your TV screen.
+**Important**: To complete the configuration procedure properly, you must be sure that your **TV is turned on and connected to the LAN (wired or wireless)**. Stay near to your TV during configuration because probably you will need to accept the access request that will prompt on your TV screen.
 
-**Note**: To configure the component for using SmartThings (strongly suggested) you need to generate an access token as explained in [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md). Also make sure your TV is logged into your SmartThings account before starting configuration.
+**Note**: To configure the component for using **SmartThings (strongly suggested)** you need to generate an access token as explained in [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md). Also make sure your **TV is logged into your SmartThings account** before starting configuration.
 
 ### Option A: Configuration using the web UI [**recommended**]
 
@@ -97,7 +97,7 @@ There are two ways of doing so:
 You can configure additional option for the component using configuration variable in `configuration.yaml` section.<br/>
 Some of this option are available only during component configuration because are stored in the registry during setup phase, other can be changed in `configuration.yaml` at any moment.<br/>
 
-Section in `configuration.yaml` file must always start with `host` as shown in the following example:<br/>
+Section in `configuration.yaml` file can also not be present if you configure the componet using web interface. If you want configure any parameters, you must create one section that start with `- host` as shown in the example below:<br/>
 ```
 samsungtv_smart:
   - host: <YOUR TV IP ADDRES>
