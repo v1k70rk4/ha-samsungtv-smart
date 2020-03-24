@@ -28,27 +28,31 @@ There are two ways of doing so:
 - Using the web interface (Lovelace) [**recommended**]
 - Manually editing the `configuration.yaml` file
 
+**Important**: To complete the configuration procedure properly, you must be sure that your TV is turned on and connected to the LAN. Stay near to your TV during configuration because probably you will need to accept the access request that will prompt on your TV screen.
+
 **Note**: To configure the component for using SmartThings (strongly suggested) use this [guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md).
 
 ### Option A: Configuration using the web UI [**recommended**]
 
 1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' locate     '**SamsungTV Smart**' and click 'Configure'.
 2. In the configuration mask, enter the IP address of the TV, the name for the entity and click 'Submit'
-3. Congrats! You're all set!
+3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
+4. Congrats! You're all set!
 
 ### Option B: Configuration via editing `configuration.yaml`
 
 1. Enable the component by editing the configuration.yaml file (within the config directory as well). Edit it by adding the following lines:
-
     ```
     samsungtv_smart:
       - host: <YOUR TV IP ADDRES>
         name: My TV name
         ...
     ```
-
 2. Restart Home Assistant.
-3. Congrats! You're all set!
+3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
+4. Congrats! You're all set!
+
+### For best performance you should now move the next section and at least configure app_list
 
 # Custom configuration parameters
 
