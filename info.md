@@ -59,13 +59,13 @@ There are two ways of doing so:
 You can configure additional option for the component using configuration variable in `configuration.yaml` section.<br/>
 Some of this option are available only during component configuration because are stored in the registry during setup phase, other can be changed in `configuration.yaml` at any moment.<br/>
 
-Section in `configuration.yaml` file must always start with `host` as shown in the following example:
-    ```
-    samsungtv_smart:
-      - host: <YOUR TV IP ADDRES>
-        ...
-    ```
-Then you can add any of the following parameters:
+Section in `configuration.yaml` file must always start with `host` as shown in the following example:<br/>
+```
+samsungtv_smart:
+  - host: <YOUR TV IP ADDRES>
+    ...
+```
+Then you can add any of the following parameters:<br/>
 
 - **api_key:**<br/>
 (string)(Optional)<br/>
