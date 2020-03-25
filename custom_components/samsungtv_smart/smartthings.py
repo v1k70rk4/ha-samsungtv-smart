@@ -16,6 +16,8 @@ from homeassistant.const import (
 API_BASEURL = "https://api.smartthings.com/v1"
 API_DEVICES = API_BASEURL + "/devices/"
 
+DEVICE_TYPE_OCFTV = "f7b59139-a784-41d1-8624-56d10931b6c3"
+
 COMMAND_POWER_OFF = "{'commands': [{'component': 'main','capability': 'switch','command': 'off'}]}"
 COMMAND_POWER_ON = "{'commands': [{'component': 'main','capability': 'switch','command': 'on'}]}"
 COMMAND_REFRESH = "{'commands':[{'component': 'main','capability': 'refresh','command': 'refresh'}]}"
@@ -51,15 +53,13 @@ class SmartThingsTV:
     def __init__(
             self,
             api_key: str,
-            device_name: Optional[str] = None,
-            device_id: Optional[str] = None,
+            device_id: str,
             refresh_status: bool = True,
             session: Optional[ClientSession] = None,
     ):
    
         """Initialize SmartThingsTV."""
         self._api_key = api_key
-        self._device_name = device_name
         self._device_id = device_id
         self._refresh_status = refresh_status
         if session:
@@ -69,6 +69,7 @@ class SmartThingsTV:
             self._session = ClientSession()
             self._managed_session = True
             
+        self._device_name = None
         self._state = STATE_OFF
         self._muted = False
         self._volume = 10
@@ -89,14 +90,14 @@ class SmartThingsTV:
         return self._api_key
 
     @property
-    def device_name(self) -> str:
-        """Return currently device_name."""
-        return self._device_name
-
-    @property
     def device_id(self) -> str:
         """Return currently device_id."""
         return self._device_id
+
+    @property
+    def device_name(self) -> str:
+        """Return currently device_name."""
+        return self._device_name
 
     @property
     def state(self) -> str:
@@ -133,41 +134,39 @@ class SmartThingsTV:
             self._channel = ""
             self._channel_name = appid
 
-    async def _get_device_id(self):
+    @staticmethod
+    async def get_devices_list(api_key, session: ClientSession):
 
-        if self._device_name and not self._device_id:
-
-            name = self._device_name
-            tv_name = "[TV] " + name
-            
-            try:
-                async with self._session.get(
-                    API_DEVICES,
-                    headers=_headers(self._api_key),
-                    raise_for_status=True,
-                ) as resp:
-                    device_list = await resp.json()
-            except:
-                device_list = None
-            
-            if device_list:
-                device_id = None
-                for k in device_list.get("items", {}):
-                    label = k.get("label", "")
-                    if label == name or label == tv_name:
-                        device_id = k.get("deviceId", None)
-                        break
-                
-                if device_id:
-                    self._device_id = device_id
-                    _LOGGER.debug("SmartThings device ID: %s", device_id)
+        result = {}
         
-        return self._device_id
+        try:
+            async with session.get(
+                API_DEVICES,
+                headers=_headers(api_key),
+                raise_for_status=True,
+            ) as resp:
+                device_list = await resp.json()
+        except:
+            device_list = None
+        
+        if device_list:
+            _LOGGER.debug("SmartThings infos: %s", str(device_list))
+
+            for k in device_list.get("items", {}):
+                device_id = k.get("deviceId", "")
+                device_type = k.get("deviceTypeId", "")
+                if device_id and device_type == DEVICE_TYPE_OCFTV:
+                    result.setdefault(device_id, {})["name"] = k.get("name", "")
+                    result.setdefault(device_id, {})["label"] = k.get("label", "")
+            
+        _LOGGER.info("SmartThings discovered TV devices: %s", str(result))
+        
+        return result
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def _device_refresh(self, **kwargs):
 
-        device_id = await self._get_device_id()
+        device_id = self._device_id
         if not device_id:
             return
 
@@ -184,7 +183,7 @@ class SmartThingsTV:
 
     async def async_device_update(self):
 
-        device_id = await self._get_device_id()
+        device_id = self._device_id
         if not device_id:
             return
 
@@ -245,7 +244,7 @@ class SmartThingsTV:
 
     async def async_send_command(self, command, cmdtype):
 
-        device_id = await self._get_device_id()
+        device_id = self._device_id
         if not device_id:
             return
 

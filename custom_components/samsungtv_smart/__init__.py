@@ -24,6 +24,7 @@ from homeassistant.const import (
     CONF_MAC,
     CONF_ID,
     CONF_PORT,
+    CONF_DEVICE_ID,
     CONF_TIMEOUT,
     CONF_API_KEY,
     CONF_BROADCAST_ADDRESS,
@@ -153,26 +154,17 @@ class SamsungTVInfo:
     
         return RESULT_NOT_SUCCESSFUL
 
-    async def _try_connect_sm(self, session: ClientSession, api_key, device_name):
-        device_id = None
+    async def get_st_devices(self, api_key, session: ClientSession):
+        devices = {}
         try:
             with timeout(4):
-                with SmartThingsTV(
-                    api_key = api_key,
-                    device_name = device_name,
-                    refresh_status = False,
-                    session = session,
-                ) as sf:
-                    device_id = await sf._get_device_id()
+                devices = await SmartThingsTV.get_devices_list(api_key, session)
         except (asyncio.TimeoutError, ClientConnectionError) as ex:
             pass
-            
-        if device_id:
-           return RESULT_SUCCESS
 
-        return RESULT_WRONG_APIKEY
+        return devices
 
-    async def get_device_info(self, session: ClientSession, device_name= "", api_key = ""):
+    async def get_device_info(self, session: ClientSession):
 
         if session is None:
             return RESULT_NOT_SUCCESSFUL
@@ -203,16 +195,11 @@ class SamsungTVInfo:
             self._uuid = device_id
         self._macaddress = device.get("wifiMac")
         self._device_name = device.get("name")
-        if device_name and not self._device_name:
-            self._device_name = device_name
         if not self._name:
             self._name = self._device_name
         self._device_model = device.get("modelName")
         self._tokensupport = device.get("TokenAuthSupport")
-        
-        if api_key:
-            result = await self._try_connect_sm(session, api_key, self._device_name)
-            
+
         return result
 
 async def async_setup(hass: HomeAssistantType, config: ConfigEntry):

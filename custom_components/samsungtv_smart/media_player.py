@@ -54,6 +54,7 @@ from homeassistant.const import (
     CONF_MAC,
     CONF_NAME,
     CONF_PORT,
+    CONF_DEVICE_ID,
     CONF_TIMEOUT,
     CONF_API_KEY,
     STATE_OFF,
@@ -157,8 +158,8 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._scan_app_http = config.get(CONF_SCAN_APP_HTTP, True)
         
         port = config.get(CONF_PORT)
-        api_key = config.get(CONF_API_KEY)
-        device_id = None # not used anymore
+        api_key = config.get(CONF_API_KEY, None)
+        device_id = config.get(CONF_DEVICE_ID, None)
         source_list = config.get(CONF_SOURCE_LIST, DEFAULT_SOURCE_LIST)
         app_list = config.get(CONF_APP_LIST)
 
@@ -207,10 +208,9 @@ class SamsungTVDevice(MediaPlayerDevice):
         )
         
         self._st = None
-        if api_key and (self._device_name or device_id):
+        if api_key and device_id:
             self._st = SmartThingsTV(
                 api_key = api_key,
-                device_name = self._device_name,
                 device_id = device_id,
                 refresh_status = True, # may became a config option to limit write on the cloud???
                 session = session

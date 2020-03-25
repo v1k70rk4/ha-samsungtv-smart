@@ -22,6 +22,7 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PORT,
     CONF_API_KEY,
+    CONF_DEVICE_ID,
 )
 
 # pylint:disable=unused-import
@@ -35,6 +36,7 @@ from .const import (
     UPDATE_METHODS,
     RESULT_SUCCESS,
     RESULT_NOT_SUCCESSFUL,
+    RESULT_WRONG_APIKEY,
 )
 
 DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str, vol.Required(CONF_NAME): str, vol.Optional(CONF_API_KEY): str})
@@ -59,6 +61,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._tvinfo = None
         self._host = None
         self._api_key = None
+        self._deviceid = None
         self._name = None
         self._mac = None
         self._update_method = None
@@ -68,7 +71,6 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _get_entry(self):
         data = {
             CONF_HOST: self._host,
-            CONF_API_KEY: self._api_key,
             CONF_NAME: self._tvinfo._name,
             CONF_ID: self._tvinfo._uuid,
             CONF_MAC: self._mac,
@@ -77,7 +79,9 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_PORT: self._tvinfo._port,
             CONF_UPDATE_METHOD: self._update_method
         }
-        if self._api_key:
+        if self._api_key and self._deviceid:
+            data[CONF_API_KEY] = self._api_key
+            data[CONF_DEVICE_ID] = self._deviceid
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
         else:
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
@@ -85,10 +89,18 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.info("Configured new entity %s with host %s", self._title, self._host)
         return self.async_create_entry(title=self._title, data=data,)
 
-    async def _try_connect(self, device_name = ""):
+    async def _try_connect(self, st_device_label = ""):
         """Try to connect and check auth."""
         self._tvinfo = SamsungTVInfo(self.hass, self._host, self._name)
-        result = await self._tvinfo.get_device_info(self.hass.helpers.aiohttp_client.async_get_clientsession(), device_name, self._api_key)
+        session = self.hass.helpers.aiohttp_client.async_get_clientsession()
+        result = await self._tvinfo.get_device_info(session)
+        if result == RESULT_SUCCESS and self._api_key:
+            devices_list = await self._tvinfo.get_st_devices(self._api_key, session)
+            if not devices_list:
+                return RESULT_WRONG_APIKEY
+                
+            self._deviceid = list(devices_list.keys())[0] # get the fisrt, need to be managed ...
+            
         return result
 
     async def async_step_import(self, user_input=None):
@@ -115,10 +127,10 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._update_method = UPDATE_METHODS["SmartThings"]
             else:
                 self._update_method = UPDATE_METHODS["Ping"]
-            device_name = user_input.get(CONF_DEVICE_NAME, "")
+            st_device_label = user_input.get(CONF_DEVICE_NAME, "")
             is_import = user_input.get(SOURCE_IMPORT, False)
             
-            result = await self._try_connect(device_name)
+            result = await self._try_connect(st_device_label)
             
             if result != RESULT_SUCCESS:
                 if is_import:
