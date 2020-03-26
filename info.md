@@ -6,10 +6,8 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 This project is a fork of the component [SamsungTV Tizen](https://github.com/jaruba/ha-samsungtv-tizen). I added some feature like the possibility to configure it using the HA user interface, simplifing the configuration process. I also added some code optimizition in the comunication layer using async aiohttp instead of request.
 </br>
-**Most part of the code and documentation available here come from the original project.**
+**Part of the code and documentation available here come from the original project.**
 </br>
-
-**Development for this project relies solely on donations, so if you enjoy this component, please consider [becoming a patron](https://www.patreon.com/powder_tech) or [donating](https://powder.media/donate) to ensure it's continued survival.**
 
 # Additional Features:
 
@@ -77,9 +75,9 @@ This parameter can also be provided during the component configuration using the
 
 - **device_name:**<br/>
 (string)(Optional)<br/>
-This is an optional value, normally is automatically detected during setup phase and so is not required to specify it. You should try to configure this parameter only if the setup fail in the detection.<br/>
-The device_name can be read using the TV Menu, normally select the menu General -> System Options<br/>
-**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must before delete the integration from UI.**<br/>
+This is an optional value, used only to identify the TV in SmartThings during initial configuration if you have more TV registered. You should  configure this parameter only if the setup fails in the detection.<br/>
+The device_name to use can be read using the SmartThings app<br/>
+**Note: this parameter is used only during initial configuration.**<br/>
 
 - **mac:**<br/>
 (string)(Optional)<br/>
