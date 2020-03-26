@@ -87,12 +87,13 @@ MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
 KEY_PRESS_TIMEOUT = 0.5
 UPDATE_PING_TIMEOUT = 1
-HTTP_APPCHECK_TIMEOUT = 1
+HTTP_APPCHECK_TIMEOUT = 0.5
 ST_APP_SEPARATOR = "/"
 WS_CONN_TIMEOUT = 10
 
-MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
+MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
+MIN_TIME_BETWEEN_PING = timedelta(seconds=5)
 MIN_TIME_BETWEEN_APP_SCANS = timedelta(seconds=60)
 POWER_OFF_DELAY = timedelta(seconds=20)
 
@@ -252,13 +253,18 @@ class SamsungTVDevice(MediaPlayerDevice):
             and self._end_of_power_off > dt_util.utcnow()
         )
 
-    def _ping_device(self, force_ping = False):
+    @util.Throttle(MIN_TIME_BETWEEN_PING)
+    def _ping_device(self, force_ping = False, **kwargs):
         # HTTP ping
+        
+        st_state = STATE_OFF
+        if self._st:
+            st_state = self._st.state
 
-        if self._is_ws_connection and (self._update_method == "ping" or force_ping):
+        if self._is_ws_connection and (self._update_method == "ping" or force_ping or (self._update_method == "smartthings" and st_state == STATE_ON)):
 
             try:
-                ping_url = BASE_URL.format(host=self._host)
+                ping_url = f"{BASE_URL}status".format(host=self._host) # use a generic URL with less payload that return status 404
                 if self._update_custom_ping_url is not None:
                     ping_url = self._update_custom_ping_url
 
@@ -271,8 +277,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 self._state = STATE_OFF
 
         elif self._update_method == "smartthings" and self._st:
-
-            self._state = self._st.state
+            self._state = st_state
 
         # WS ping
         else:
@@ -290,7 +295,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
             # this method, due to the fact that is in the local LAN and using aiohttp, is very very fast (less than 1 sec) 
             # and more immediate in result. The only issue is that in some case (eg. Prime Video) do not work
-            if self._session and self._scan_app_http:
+            if self._scan_app_http:
             
                 _LOGGER.debug("Start getting running app...")
                 for app in self._app_list:
@@ -632,7 +637,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 else:
                     wakeonlan.send_magic_packet(self._mac)
                 time.sleep(2)
-                self._ping_device(force_ping = True)
+                self._ping_device(force_ping=True, no_throttle=True)
             else:
                 self.send_command("KEY_POWERON")
 
