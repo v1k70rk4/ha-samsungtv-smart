@@ -154,11 +154,11 @@ class SamsungTVInfo:
     
         return RESULT_NOT_SUCCESSFUL
 
-    async def get_st_devices(self, api_key, session: ClientSession):
+    async def get_st_devices(self, api_key, session: ClientSession, st_device_label=""):
         devices = {}
         try:
             with timeout(4):
-                devices = await SmartThingsTV.get_devices_list(api_key, session)
+                devices = await SmartThingsTV.get_devices_list(api_key, session, st_device_label)
         except (asyncio.TimeoutError, ClientConnectionError) as ex:
             pass
 

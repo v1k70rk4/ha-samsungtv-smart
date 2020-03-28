@@ -7,13 +7,14 @@
             "auth_missing": "Home Assistant non \u00e8 autorizzato a connettersi a questo Samsung TV. Controlla le impostazioni del tuo TV per autorizzare Home Assistant.",
             "not_successful": "Impossibile connettersi a questo dispositivo Samsung TV.",
             "not_supported": "Questo dispositivo Samsung TV non \u00e8 attualmente supportato.",
-            "wrong_api_key": "SmartThings token errato."
+            "wrong_api_key": "SmartThings token errato o TV non registrato su SmartThings.",
+            "multiple_st_device": "Trovati multipli TV, impossibile identificare il dispositivo SmartThings da associare."
         },
         "error": {
             "auth_missing": "Home Assistant non \u00e8 autorizzato a connettersi a questo Samsung TV. Controlla le impostazioni del tuo TV per autorizzare Home Assistant.",
             "not_successful": "Impossibile connettersi a questo dispositivo Samsung TV.",
             "not_supported": "Questo dispositivo Samsung TV non \u00e8 attualmente supportato.",
-            "wrong_api_key": "SmartThings token errato."
+            "wrong_api_key": "SmartThings token errato o TV non registrato su SmartThings."
         },
         "flow_title": "SamsungTV Smart: {model}",
         "step": {
@@ -28,6 +29,13 @@
                     "api_key": "SmartThings token generato (opzionale)"
                 },
                 "description": "Inserisci le informazioni del tuo Samsung TV. Il token SmartThings \u00e8 opzionale ma fortemente consigliato. Se non hai mai connesso Home Assistant in precedenza, dovresti vedere un messaggio sul TV in cui \u00e8 richiesta l'autorizzazione.",
+                "title": "SamsungTV Smart"
+            },
+            "stdevice": {
+                "data": {
+                    "st_devices": "SmartThings TV"
+                },
+                "description": "Hai più di un TV configurato sul tuo account. Seleziona il TV che stai configurando dalla lista.",
                 "title": "SamsungTV Smart"
             }
         },

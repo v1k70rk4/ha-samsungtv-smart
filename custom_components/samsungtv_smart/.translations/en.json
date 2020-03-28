@@ -7,13 +7,14 @@
             "auth_missing": "Home Assistant is not authorized to connect to this Samsung TV. Please check your TV's settings to authorize Home Assistant.",
             "not_successful": "Unable to connect to this Samsung TV device.",
             "not_supported": "This Samsung TV device is currently not supported.",
-            "wrong_api_key": "Wrong SmartThings token."
+            "wrong_api_key": "Wrong SmartThings token or TV not registered in SmartThings.",
+            "multiple_st_device": "Multiple TVs found, unable to identify the SmartThings device to pair."
         },
         "error": {
             "auth_missing": "Home Assistant is not authorized to connect to this Samsung TV. Please check your TV's settings to authorize Home Assistant.",
             "not_successful": "Unable to connect to this Samsung TV device.",
             "not_supported": "This Samsung TV device is currently not supported.",
-            "wrong_api_key": "Wrong SmartThings token."
+            "wrong_api_key": "Wrong SmartThings token or TV not registered in SmartThings."
         },
         "flow_title": "SamsungTV Smart: {model}",
         "step": {
@@ -28,6 +29,13 @@
                     "api_key": "SmartThings generated token (optional)"
                 },
                 "description": "Enter your Samsung TV information. SmartThings token is optional but really suggested. If you never connected Home Assistant before you should see a popup on your TV asking for authorization.",
+                "title": "SamsungTV Smart"
+            },
+            "stdevice": {
+                "data": {
+                    "st_devices": "SmartThings TV"
+                },
+                "description": "You have multiple TVs configured on your account. Select the TV you are configuring from the list.",
                 "title": "SamsungTV Smart"
             }
         },

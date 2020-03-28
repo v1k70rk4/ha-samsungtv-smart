@@ -37,8 +37,10 @@ from .const import (
     RESULT_SUCCESS,
     RESULT_NOT_SUCCESSFUL,
     RESULT_WRONG_APIKEY,
+    RESULT_MULTI_DEVICES,
 )
 
+CONF_ST_DEVICE = "st_devices"
 DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str, vol.Required(CONF_NAME): str, vol.Optional(CONF_API_KEY): str})
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._mac = None
         self._update_method = None
 
-        self._title = None
+        self._st_devices_schema = None
 
     def _get_entry(self):
         data = {
@@ -79,15 +81,32 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_PORT: self._tvinfo._port,
             CONF_UPDATE_METHOD: self._update_method
         }
+
+        title = self._tvinfo._name
         if self._api_key and self._deviceid:
             data[CONF_API_KEY] = self._api_key
             data[CONF_DEVICE_ID] = self._deviceid
+            title += " (SmartThings)"
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
         else:
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
         
-        _LOGGER.info("Configured new entity %s with host %s", self._title, self._host)
-        return self.async_create_entry(title=self._title, data=data,)
+        _LOGGER.info("Configured new entity %s with host %s", title, self._host)
+        return self.async_create_entry(title=title, data=data,)
+
+    def _extract_dev_name(self, device):
+        name = device["name"]
+        label = device.get("label", "")
+        if label:
+            name += f" ({label})"
+        return name
+
+    def _prepare_dev_schema(self, devices_list):
+        validate = {}
+        for id, infos in devices_list.items():
+            device_name = self._extract_dev_name(infos)
+            validate[id] = device_name
+        return vol.Schema({vol.Required(CONF_ST_DEVICE): vol.In(validate)})
 
     async def _try_connect(self, st_device_label = ""):
         """Try to connect and check auth."""
@@ -95,11 +114,14 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         session = self.hass.helpers.aiohttp_client.async_get_clientsession()
         result = await self._tvinfo.get_device_info(session)
         if result == RESULT_SUCCESS and self._api_key:
-            devices_list = await self._tvinfo.get_st_devices(self._api_key, session)
+            devices_list = await self._tvinfo.get_st_devices(self._api_key, session, st_device_label)
             if not devices_list:
                 return RESULT_WRONG_APIKEY
-                
-            self._deviceid = list(devices_list.keys())[0] # get the fisrt, need to be managed ...
+
+            if len(devices_list) > 1:
+                self._st_devices_schema = self._prepare_dev_schema(devices_list)
+            else:
+                self._deviceid = list(devices_list.keys())[0]
             
         return result
 
@@ -131,6 +153,8 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             is_import = user_input.get(SOURCE_IMPORT, False)
             
             result = await self._try_connect(st_device_label)
+            if is_import and self._st_devices_schema:
+                result = RESULT_MULTI_DEVICES
             
             if result != RESULT_SUCCESS:
                 if is_import:
@@ -142,20 +166,27 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             mac = user_input.get(CONF_MAC, "")
             self._mac = mac if not self._tvinfo._macaddress else self._tvinfo._macaddress 
 
-            self._title = self._tvinfo._name
-            if self._api_key:
-                self._title += " (SmartThings)"
-            
-            return self._get_entry()
+            if self._st_devices_schema:
+                return self._show_form(errors=None, step_id="stdevice")
+            else:
+                return self._get_entry()
 
         return self._show_form()
 
+    async def async_step_stdevice(self, user_input=None):
+        self._deviceid = user_input.get(CONF_ST_DEVICE)
+        return self._get_entry()
+
     @callback
-    def _show_form(self, errors=None):
+    def _show_form(self, errors=None, step_id="user"):
         """Show the form to the user."""
+        data_schema = DATA_SCHEMA
+        if step_id=="stdevice":
+            data_schema = self._st_devices_schema
+
         return self.async_show_form(
-            step_id="user",
-            data_schema=DATA_SCHEMA,
+            step_id=step_id,
+            data_schema=data_schema,
             errors=errors if errors else {},
         )
 

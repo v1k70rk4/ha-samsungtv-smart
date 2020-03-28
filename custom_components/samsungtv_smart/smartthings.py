@@ -135,7 +135,7 @@ class SmartThingsTV:
             self._channel_name = appid
 
     @staticmethod
-    async def get_devices_list(api_key, session: ClientSession):
+    async def get_devices_list(api_key, session: ClientSession, device_label = ""):
 
         result = {}
         
@@ -156,8 +156,10 @@ class SmartThingsTV:
                 device_id = k.get("deviceId", "")
                 device_type = k.get("deviceTypeId", "")
                 if device_id and device_type == DEVICE_TYPE_OCFTV:
-                    result.setdefault(device_id, {})["name"] = k.get("name", "")
-                    result.setdefault(device_id, {})["label"] = k.get("label", "")
+                    label = k.get("label", "")
+                    if device_label == "" or (label == device_label and label != ""):
+                        result.setdefault(device_id, {})["name"] = k.get("name", "")
+                        result.setdefault(device_id, {})["label"] = label
             
         _LOGGER.info("SmartThings discovered TV devices: %s", str(result))
         

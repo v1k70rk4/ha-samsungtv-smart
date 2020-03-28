@@ -13,6 +13,7 @@ RESULT_SUCCESS = "success"
 RESULT_NOT_SUCCESSFUL = "not_successful"
 RESULT_NOT_SUPPORTED = "not_supported"
 RESULT_WRONG_APIKEY = "wrong_api_key"
+RESULT_MULTI_DEVICES = "multiple_st_device"
 
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
