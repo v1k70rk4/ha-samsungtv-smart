@@ -261,7 +261,7 @@ class SmartThingsTV:
            if command == "up":
               datacmd = COMMAND_VOLUME_UP
            else:
-              datacmd = COMMAND_VOLUME_DPWN
+              datacmd = COMMAND_VOLUME_DOWN
         elif cmdtype == "audiomute": # mutes audio
            if self._muted == False:
               datacmd = COMMAND_MUTE
