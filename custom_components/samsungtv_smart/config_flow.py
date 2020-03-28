@@ -1,6 +1,7 @@
 """Config flow for Samsung TV."""
 import socket
 from urllib.parse import urlparse
+from typing import Any, Dict, List, Optional
 import logging
 
 import voluptuous as vol
@@ -94,6 +95,20 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.info("Configured new entity %s with host %s", title, self._host)
         return self.async_create_entry(title=title, data=data,)
 
+    def _stdev_already_used(self, devices_id):
+        for entry in self._async_current_entries():
+            if entry.data.get(CONF_DEVICE_ID, "") == devices_id:
+                return True
+        return False
+
+    def _remove_stdev_used(self, devices_list: Dict[str, Any]) -> Dict[str, Any]:
+        res_dev_list = devices_list.copy()
+        
+        for id in devices_list.keys():
+            if self._stdev_already_used(id):
+                res_dev_list.pop(id)
+        return res_dev_list
+
     def _extract_dev_name(self, device):
         name = device["name"]
         label = device.get("label", "")
@@ -114,7 +129,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         session = self.hass.helpers.aiohttp_client.async_get_clientsession()
         result = await self._tvinfo.get_device_info(session)
         if result == RESULT_SUCCESS and self._api_key:
-            devices_list = await self._tvinfo.get_st_devices(self._api_key, session, st_device_label)
+            devices_list = self._remove_stdev_used(await self._tvinfo.get_st_devices(self._api_key, session, st_device_label))
             if not devices_list:
                 return RESULT_WRONG_APIKEY
 
