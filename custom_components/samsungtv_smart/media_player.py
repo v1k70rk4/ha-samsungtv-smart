@@ -89,7 +89,6 @@ from .const import (
 MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
 DEFAULT_KEYPRESS_DELAY = 0.5
-DEFAULT_KEYCHAIN_DELAY = 0.2
 UPDATE_PING_TIMEOUT = 1
 HTTP_APPCHECK_TIMEOUT = 1
 ST_APP_SEPARATOR = "/"
@@ -482,7 +481,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             elif source_key.startswith("ST_CH"):
                 await self._st.async_send_command("selectchannel", source_key.replace("ST_CH", ""))
             elif source_key == "ST_MUTE":
-                await self._st.async_send_command("audiomute", "off" if self.muted else "on")
+                await self._st.async_send_command("audiomute", "off" if self._muted else "on")
             elif source_key == "ST_VOLUP":
                 await self._st.async_send_command("stepvolume", "up")
             elif source_key == "ST_VOLDOWN":
@@ -808,7 +807,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     
             for digit in media_id:
                 await self.async_send_command("KEY_" + digit)
-                await asyncio.sleep(DEFAULT_KEYCHAIN_DELAY)
+                await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
 
             await self.async_send_command("KEY_ENTER")
 
@@ -832,11 +831,11 @@ class SamsungTVDevice(MediaPlayerDevice):
                     if this_key.isdigit():
                         #time.sleep(int(this_key)/1000)
                         prev_wait = True
-                        await asyncio.sleep(int(this_key)/1000)
+                        await asyncio.sleep(min(max(int(this_key), 200), 2000)/1000)
                     else:
                         # put a default delay between key if set explicit
                         if not prev_wait:
-                            await asyncio.sleep(DEFAULT_KEYCHAIN_DELAY)
+                            await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
                         prev_wait = False
                         if this_key.startswith("ST_"):
                             await self._smartthings_keys(this_key)
@@ -886,11 +885,11 @@ class SamsungTVDevice(MediaPlayerDevice):
                     if this_key.isdigit():
                         #time.sleep(int(this_key)/1000)
                         prev_wait = True
-                        await asyncio.sleep(int(this_key)/1000)
+                        await asyncio.sleep(min(max(int(this_key), 200), 2000)/1000)
                     else:
                         # put a default delay between key if set explicit
                         if not prev_wait:
-                            await asyncio.sleep(DEFAULT_KEYCHAIN_DELAY)
+                            await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
                         prev_wait = False
                         if this_key.startswith("ST_"):
                             await self._smartthings_keys(this_key)
