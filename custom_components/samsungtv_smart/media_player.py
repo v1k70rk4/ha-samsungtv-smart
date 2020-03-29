@@ -793,9 +793,39 @@ class SamsungTVDevice(MediaPlayerDevice):
         else:
             self.send_command("KEY_REWIND")
 
+    async def _async_send_keys(self, source_key):
+        """Send key / chained keys."""
+        prev_wait = True
+
+        if "+" in source_key:
+            all_source_keys = source_key.split("+")
+            for this_key in all_source_keys:
+                if this_key.isdigit():
+                    #time.sleep(int(this_key)/1000)
+                    prev_wait = True
+                    await asyncio.sleep(min(max(int(this_key), 200), 2000)/1000)
+                else:
+                    # put a default delay between key if set explicit
+                    if not prev_wait:
+                        await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
+                    prev_wait = False
+                    if this_key.startswith("ST_"):
+                        await self._smartthings_keys(this_key)
+                    else:
+                        await self.async_send_command(this_key)
+        elif source_key.startswith("ST_"):
+            if self._st:
+                await self._smartthings_keys(source_key)
+            else:
+                _LOGGER.error("Unsupported _ST source. You must configure SmartThings")
+                return False
+        else:
+            await self.async_send_command(source_key)
+    
+        return True
+    
     async def async_play_media(self, media_type, media_id, **kwargs):
         """Support changing a channel."""
-        prev_wait = True
 
         # Type channel
         if media_type == MEDIA_TYPE_CHANNEL:
@@ -824,31 +854,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 return
 
             source_key = media_id
-
-            if "+" in source_key:
-                all_source_keys = source_key.split("+")
-                for this_key in all_source_keys:
-                    if this_key.isdigit():
-                        #time.sleep(int(this_key)/1000)
-                        prev_wait = True
-                        await asyncio.sleep(min(max(int(this_key), 200), 2000)/1000)
-                    else:
-                        # put a default delay between key if set explicit
-                        if not prev_wait:
-                            await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
-                        prev_wait = False
-                        if this_key.startswith("ST_"):
-                            await self._smartthings_keys(this_key)
-                        else:
-                            await self.async_send_command(this_key)
-            elif source_key.startswith("ST_"):
-                if self._st:
-                    await self._smartthings_keys(source_key)
-                else:
-                    _LOGGER.error("Unsupported _ST source. You must configure SmartThings")
-                    return
-            else:
-                await self.async_send_command(source_key)
+            await self._async_send_keys(source_key)
 
         # Play media
         elif media_type == MEDIA_TYPE_URL:
@@ -876,33 +882,12 @@ class SamsungTVDevice(MediaPlayerDevice):
     async def async_select_source(self, source):
         """Select input source."""
         running_app = DEFAULT_APP
-        prev_wait = True
+
         if source in self._source_list:
             source_key = self._source_list[ source ]
-            if "+" in source_key:
-                all_source_keys = source_key.split("+")
-                for this_key in all_source_keys:
-                    if this_key.isdigit():
-                        #time.sleep(int(this_key)/1000)
-                        prev_wait = True
-                        await asyncio.sleep(min(max(int(this_key), 200), 2000)/1000)
-                    else:
-                        # put a default delay between key if set explicit
-                        if not prev_wait:
-                            await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
-                        prev_wait = False
-                        if this_key.startswith("ST_"):
-                            await self._smartthings_keys(this_key)
-                        else:
-                            await self.async_send_command(this_key)
-            elif source_key.startswith("ST_"):
-                if self._st:
-                    await self._smartthings_keys(source_key)
-                else:
-                    _LOGGER.error("Unsupported _ST source. You must configure SmartThings")
-                    return
-            else:
-                await self.async_send_command(self._source_list[ source ])
+            result = await self._async_send_keys(source_key)
+            if not result:
+                return
         elif source in self._app_list:
             source_key = self._app_list[ source ]
             running_app = source
