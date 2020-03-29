@@ -88,7 +88,8 @@ from .const import (
 #KNOWN_DEVICES_KEY = "samsungtv_known_devices"
 MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
-KEY_PRESS_TIMEOUT = 0.5
+DEFAULT_KEYPRESS_DELAY = 0.5
+DEFAULT_KEYCHAIN_DELAY = 0.2
 UPDATE_PING_TIMEOUT = 1
 HTTP_APPCHECK_TIMEOUT = 1
 ST_APP_SEPARATOR = "/"
@@ -205,7 +206,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             host=self._host,
             port=port,
             timeout=self._timeout,
-            key_press_delay=KEY_PRESS_TIMEOUT,
+            key_press_delay=DEFAULT_KEYPRESS_DELAY,
             token_file=self._token_file,
             app_list=self._app_list
         )
@@ -509,8 +510,10 @@ class SamsungTVDevice(MediaPlayerDevice):
         if self._state == STATE_OFF:
             self._end_of_power_off = None 
 
-    def send_command(self, payload, command_type = "send_key", retry_count = 1, key_press_delay=None):
+    def send_command(self, payload, command_type = "send_key", retry_count = 1, key_press_delay = 0):
         """Send a key to the tv and handles exceptions."""
+        if key_press_delay < 0:
+            key_press_delay = None #means "default" provided with constructor
 
         call_time = datetime.now()
         difference = (call_time - self._last_command_time).total_seconds()
@@ -552,7 +555,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         return True
 
-    async def async_send_command(self, payload, command_type = "send_key", retry_count = 1, key_press_delay=None):
+    async def async_send_command(self, payload, command_type = "send_key", retry_count = 1, key_press_delay = 0):
         return await self.hass.async_add_job(self.send_command, payload, command_type, retry_count, key_press_delay)
 
     @property
@@ -793,6 +796,7 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     async def async_play_media(self, media_type, media_id, **kwargs):
         """Support changing a channel."""
+        prev_wait = True
 
         # Type channel
         if media_type == MEDIA_TYPE_CHANNEL:
@@ -804,6 +808,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     
             for digit in media_id:
                 await self.async_send_command("KEY_" + digit)
+                await asyncio.sleep(DEFAULT_KEYCHAIN_DELAY)
 
             await self.async_send_command("KEY_ENTER")
 
@@ -826,8 +831,13 @@ class SamsungTVDevice(MediaPlayerDevice):
                 for this_key in all_source_keys:
                     if this_key.isdigit():
                         #time.sleep(int(this_key)/1000)
+                        prev_wait = True
                         await asyncio.sleep(int(this_key)/1000)
                     else:
+                        # put a default delay between key if set explicit
+                        if not prev_wait:
+                            await asyncio.sleep(DEFAULT_KEYCHAIN_DELAY)
+                        prev_wait = False
                         if this_key.startswith("ST_"):
                             await self._smartthings_keys(this_key)
                         else:
@@ -867,6 +877,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     async def async_select_source(self, source):
         """Select input source."""
         running_app = DEFAULT_APP
+        prev_wait = True
         if source in self._source_list:
             source_key = self._source_list[ source ]
             if "+" in source_key:
@@ -874,8 +885,13 @@ class SamsungTVDevice(MediaPlayerDevice):
                 for this_key in all_source_keys:
                     if this_key.isdigit():
                         #time.sleep(int(this_key)/1000)
+                        prev_wait = True
                         await asyncio.sleep(int(this_key)/1000)
                     else:
+                        # put a default delay between key if set explicit
+                        if not prev_wait:
+                            await asyncio.sleep(DEFAULT_KEYCHAIN_DELAY)
+                        prev_wait = False
                         if this_key.startswith("ST_"):
                             await self._smartthings_keys(this_key)
                         else:
