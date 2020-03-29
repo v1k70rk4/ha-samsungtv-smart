@@ -27,6 +27,7 @@ CONF_SOURCE_LIST = "source_list"
 CONF_APP_LIST = "app_list"
 CONF_SHOW_CHANNEL_NR = "show_channel_number"
 CONF_SCAN_APP_HTTP = "scan_app_http"
+CONF_DEVICE_OS = "device_os"
 
 WS_PREFIX = "[Home Assistant]"
 

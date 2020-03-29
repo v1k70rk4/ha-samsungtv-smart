@@ -34,6 +34,7 @@ from .const import (
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
     CONF_UPDATE_METHOD,
+    CONF_DEVICE_OS,
     UPDATE_METHODS,
     RESULT_SUCCESS,
     RESULT_NOT_SUCCESSFUL,
@@ -91,7 +92,10 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
         else:
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
-        
+
+        if self._tvinfo._device_os:
+            data[CONF_DEVICE_OS] = self._tvinfo._device_os
+
         _LOGGER.info("Configured new entity %s with host %s", title, self._host)
         return self.async_create_entry(title=title, data=data,)
 

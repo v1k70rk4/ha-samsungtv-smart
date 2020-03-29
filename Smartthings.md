@@ -54,3 +54,15 @@ ST_CH1|Channel1
 ST_CH2|Channel2
 ST_CH3|Channel3
 ...
+
+*Volume Keys*
+______________
+Key|Description
+---|-----------
+ST_MUTE|Mute/Unmute 
+ST_VOLUP|VolumeUp
+ST_VOLDOWN|VolumeDown
+ST_VOL1|VolumeLevel1
+ST_VOL2|VolumeLevel2
+...
+ST_VOL100|VolumeLevel100

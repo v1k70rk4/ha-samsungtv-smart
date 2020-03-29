@@ -106,7 +106,8 @@ class SamsungTVInfo:
         self._uuid = None
         self._macaddress = None
         self._device_name = None
-        self._devive_model = None
+        self._device_model = None
+        self._device_os = None
         self._token_support = False
         self._port = 0
 
@@ -198,6 +199,7 @@ class SamsungTVInfo:
         if not self._name:
             self._name = self._device_name
         self._device_model = device.get("modelName")
+        self._device_os = device.get("OS")
         self._tokensupport = device.get("TokenAuthSupport")
 
         return result

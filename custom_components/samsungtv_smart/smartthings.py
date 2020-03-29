@@ -74,9 +74,12 @@ class SmartThingsTV:
         self._muted = False
         self._volume = 10
         self._source_list = None
-        self._prev_source = self._source = None
-        self._prev_channel = self._channel = ""
-        self._prev_channel_name = self._channel_name = ""
+        self._prev_source = None
+        self._source = None
+        self._prev_channel = ""
+        self._channel = ""
+        self._prev_channel_name = ""
+        self._channel_name = ""
 
     def __enter__(self):
         return self
@@ -238,13 +241,16 @@ class SmartThingsTV:
             self._muted = False
             
         if (self._prev_source != device_source or self._prev_channel != device_tv_chan or self._prev_channel_name != device_tv_chan_name):
-            self._source = self._prev_source = device_source
+            self._source = device_source
+            self._prev_source = device_source
             # if the status is not refreshed this info may become not reliable
             if self._refresh_status:
-                self._channel = self._prev_channel = device_tv_chan
-                self._channel_name = self._prev_channel_name = device_tv_chan_name
+                self._channel = device_tv_chan
+                self._prev_channel = device_tv_chan
+                self._channel_name = device_tv_chan_name
+                self._prev_channel_name = device_tv_chan_name
 
-    async def async_send_command(self, command, cmdtype):
+    async def async_send_command(self, cmdtype, command = ""):
 
         device_id = self._device_id
         if not device_id:
@@ -254,23 +260,31 @@ class SmartThingsTV:
         API_COMMAND = API_DEVICE + "/commands"
         datacmd = None
 
-        if cmdtype == "setvolume": # sets volume
+        if cmdtype == "turn_off": # turns off
+           datacmd = COMMAND_POWER_OFF
+        elif cmdtype == "turn_on": # turns on
+           datacmd = COMMAND_POWER_ON
+        elif cmdtype == "setvolume": # sets volume
            cmdargs = ARGS_SET_VOLUME.format(command)
            datacmd = COMMAND_SET_VOLUME + cmdargs
         elif cmdtype == "stepvolume": # steps volume up or down
            if command == "up":
               datacmd = COMMAND_VOLUME_UP
-           else:
+           elif command == "down":
               datacmd = COMMAND_VOLUME_DOWN
         elif cmdtype == "audiomute": # mutes audio
-           if self._muted == False:
+           if command == "on":
               datacmd = COMMAND_MUTE
-           else:
+           elif command == "off":
               datacmd = COMMAND_UNMUTE
-        elif cmdtype == "turn_off": # turns off
-           datacmd = COMMAND_POWER_OFF
-        elif cmdtype == "turn_on": # turns on
-           datacmd = COMMAND_POWER_ON
+        elif cmdtype == "selectchannel": #changes channel
+           cmdargs = ARGS_SET_CHANNEL.format(command)
+           datacmd = COMMAND_SET_CHANNEL + cmdargs
+        elif cmdtype == "stepchannel": # steps channel up or down
+           if command == "up":
+              datacmd = COMMAND_CHANNEL_UP
+           elif command == "down":
+              datacmd = COMMAND_CHANNEL_DOWN
         elif cmdtype == "selectsource": #changes source
            cmdargs = ARGS_SET_SOURCE.format(command)
            datacmd = COMMAND_SET_SOURCE + cmdargs
@@ -278,14 +292,6 @@ class SmartThingsTV:
            self._source = command
            self._channel = ""
            self._channel_name = ""
-        elif cmdtype == "selectchannel": #changes channel
-           cmdargs = ARGS_SET_CHANNEL.format(command)
-           datacmd = COMMAND_SET_CHANNEL + cmdargs
-        elif cmdtype == "stepchannel": # steps channel up or down
-           if command == "up":
-              datacmd = COMMAND_CHANNEL_UP
-           else:
-              datacmd = COMMAND_CHANNEL_DOWN
             
         if datacmd:
            await self._session.post(
