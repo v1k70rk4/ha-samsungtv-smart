@@ -604,7 +604,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     def media_channel(self):
         """Channel currently playing."""
         if self._state == STATE_ON:
-            if self._st and self._st.state != STATE_OFF:
+            if self._st:
                 if self._st.source in ["digitalTv", "TV"] and self._st.channel != "":
                     return self._st.channel
         return None
@@ -626,7 +626,15 @@ class SamsungTVDevice(MediaPlayerDevice):
     def app_id(self):
         """ID of the current running app."""
         if self._state == STATE_ON:
-            return self._running_app
+            app = None
+            if self._app_list_ST and self._running_app != DEFAULT_APP:
+                app = self._app_list_ST.get(self._running_app, None)
+            if app:
+                return app
+            elif self._st:
+                if not self._st.channel and self._st.channel_name:
+                    return self._st.channel_name
+            return DEFAULT_APP
         return None
 
     @property
