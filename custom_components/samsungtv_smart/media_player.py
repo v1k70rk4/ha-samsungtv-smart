@@ -444,7 +444,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                     if self._running_app == DEFAULT_APP:
 
                         cloud_key = ""
-                        if self._st.source in ["digitalTv", "TV"] or self._st.channel != "":
+                        if self._st.source in ["digitalTv", "TV"]:
                             cloud_key = "ST_TV"
                         else:
                             cloud_key = "ST_" + self._st.source
@@ -584,12 +584,9 @@ class SamsungTVDevice(MediaPlayerDevice):
                 return None
             elif self._running_app == DEFAULT_APP:
                 if self._st.source in ["digitalTv", "TV"]:
-                    if self._st.channel_name != "" and self._st.channel != "":
-                        if self._show_channel_number:
+                    if self._st.channel_name != "":
+                        if self._show_channel_number and self._st.channel != "":
                             return self._st.channel_name + " (" + self._st.channel + ")"
-                        else:
-                            return self._st.channel_name
-                    elif self._st.channel_name != "":
                         return self._st.channel_name
                     elif self._st.channel != "":
                         return self._st.channel
