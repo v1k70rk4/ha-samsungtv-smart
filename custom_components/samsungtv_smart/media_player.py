@@ -85,20 +85,23 @@ from .const import (
     WS_PREFIX,
 )
 
-#KNOWN_DEVICES_KEY = "samsungtv_known_devices"
+HTTP_APPCHECK_TIMEOUT = 1
+KEYPRESS_DEFAULT_DELAY = 0.5
+KEYPRESS_MAX_DELAY = 2.0
+KEYPRESS_MIN_DELAY = 0.2
 MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
-DEFAULT_KEYPRESS_DELAY = 0.5
-UPDATE_PING_TIMEOUT = 1
-HTTP_APPCHECK_TIMEOUT = 1
+POWER_OFF_DELAY = 20
+POWER_ON_DELAY = 3
+PING_UPDATE_TIMEOUT = 1
 ST_APP_SEPARATOR = "/"
+ST_UPDATE_TIMEOUT = 5
 WS_CONN_TIMEOUT = 10
 
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
 MIN_TIME_BETWEEN_PING = timedelta(seconds=5)
 MIN_TIME_BETWEEN_APP_SCANS = timedelta(seconds=60)
-POWER_OFF_DELAY = timedelta(seconds=20)
 
 SUPPORT_SAMSUNGTV_SMART = (
     SUPPORT_PAUSE
@@ -205,7 +208,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             host=self._host,
             port=port,
             timeout=self._timeout,
-            key_press_delay=DEFAULT_KEYPRESS_DELAY,
+            key_press_delay=KEYPRESS_DEFAULT_DELAY,
             token_file=self._token_file,
             app_list=self._app_list
         )
@@ -288,7 +291,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 if self._update_custom_ping_url is not None:
                     ping_url = self._update_custom_ping_url
 
-                with timeout(UPDATE_PING_TIMEOUT):
+                with timeout(PING_UPDATE_TIMEOUT):
                     async with self._session.get(
                         ping_url,
                         raise_for_status=False,
@@ -496,7 +499,7 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Required to get source and media title"""
         if self._st:
             try:
-                with timeout(5):
+                with timeout(ST_UPDATE_TIMEOUT):
                     await self._st.async_device_update()
             except (asyncio.TimeoutError, ClientConnectionError) as ex:
                 _LOGGER.error("Samsung TV - Error refreshing from SmartThings")
@@ -702,14 +705,14 @@ class SamsungTVDevice(MediaPlayerDevice):
     async def async_turn_on(self):
         await self.hass.async_add_job(self._turn_on)
         if self._state == STATE_OFF and self._mac:
-            await asyncio.sleep(2)
+            await asyncio.sleep(POWER_ON_DELAY)
             await self._async_ping_device(force_ping=True, no_throttle=True)
 
     def turn_off(self):
         """Turn off media player."""
         if (not self._power_off_in_progress()) and self._state != STATE_OFF:
         
-            self._end_of_power_off = dt_util.utcnow() + POWER_OFF_DELAY
+            self._end_of_power_off = dt_util.utcnow() + timedelta(seconds=POWER_OFF_DELAY)
 
             if self._is_ws_connection:
                 self.send_command("KEY_POWER")
@@ -806,13 +809,12 @@ class SamsungTVDevice(MediaPlayerDevice):
             all_source_keys = source_key.split("+")
             for this_key in all_source_keys:
                 if this_key.isdigit():
-                    #time.sleep(int(this_key)/1000)
                     prev_wait = True
-                    await asyncio.sleep(min(max(int(this_key), 200), 2000)/1000)
+                    await asyncio.sleep(min(max((int(this_key) / 1000), KEYPRESS_MIN_DELAY), KEYPRESS_MAX_DELAY))
                 else:
                     # put a default delay between key if set explicit
                     if not prev_wait:
-                        await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
+                        await asyncio.sleep(KEYPRESS_DEFAULT_DELAY)
                     prev_wait = False
                     if this_key.startswith("ST_"):
                         await self._smartthings_keys(this_key)
@@ -842,7 +844,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     
             for digit in media_id:
                 await self.async_send_command("KEY_" + digit)
-                await asyncio.sleep(DEFAULT_KEYPRESS_DELAY)
+                await asyncio.sleep(KEYPRESS_DEFAULT_DELAY)
 
             await self.async_send_command("KEY_ENTER")
 
