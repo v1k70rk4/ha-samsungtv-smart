@@ -254,3 +254,9 @@ service: media_player.play_media
   "media_content_id": "https://www.google.com",
 }
 ```
+
+## Be nice!
+If you like the component, why don't you support me by buying me a coffe?
+It would certainly motivate me to further improve this work.
+
+[![Buy me a coffe!](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ollo69)
