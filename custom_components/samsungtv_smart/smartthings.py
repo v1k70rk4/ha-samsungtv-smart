@@ -14,7 +14,7 @@ from homeassistant.const import (
     STATE_ON,
 )
 API_BASEURL = "https://api.smartthings.com/v1"
-API_DEVICES = API_BASEURL + "/devices"
+API_DEVICES = f"{API_BASEURL}/devices"
 
 DEVICE_TYPE_OCFTV = "f7b59139-a784-41d1-8624-56d10931b6c3"
 
@@ -176,8 +176,8 @@ class SmartThingsTV:
         if not device_id:
             return
 
-        API_DEVICE = API_DEVICES + '/' + device_id
-        API_COMMAND = API_DEVICE + "/commands"
+        API_DEVICE = f"{API_DEVICES}/{device_id}"
+        API_COMMAND = f"{API_DEVICE}/commands"
 
         if self._refresh_status:
             await self._session.post(
@@ -193,10 +193,10 @@ class SmartThingsTV:
         if not device_id:
             return
 
-        API_DEVICE = API_DEVICES + '/' + device_id
-        API_DEVICE_HEALT = API_DEVICE + "/health"
-        API_DEVICE_STATUS = API_DEVICE + "/states"
-        API_DEVICE_MAIN_STATUS = API_DEVICE + "/components/main/status" #not used, just for reference
+        API_DEVICE = f"{API_DEVICES}/{device_id}"
+        API_DEVICE_HEALT = f"{API_DEVICE}/health"
+        API_DEVICE_STATUS = f"{API_DEVICE}/states"
+        API_DEVICE_MAIN_STATUS = f"{API_DEVICE}/components/main/status" #not used, just for reference
 
         # this get the real status of the device
         async with self._session.get(
@@ -257,8 +257,8 @@ class SmartThingsTV:
         if not device_id:
             return
 
-        API_DEVICE = API_DEVICES + '/' + device_id
-        API_COMMAND = API_DEVICE + "/commands"
+        API_DEVICE = f"{API_DEVICES}/{device_id}"
+        API_COMMAND = f"{API_DEVICE}/commands"
         datacmd = None
 
         if cmdtype == "turn_off": # turns off
