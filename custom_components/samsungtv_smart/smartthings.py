@@ -14,7 +14,7 @@ from homeassistant.const import (
     STATE_ON,
 )
 API_BASEURL = "https://api.smartthings.com/v1"
-API_DEVICES = API_BASEURL + "/devices/"
+API_DEVICES = API_BASEURL + "/devices"
 
 DEVICE_TYPE_OCFTV = "f7b59139-a784-41d1-8624-56d10931b6c3"
 
@@ -149,11 +149,12 @@ class SmartThingsTV:
                 raise_for_status=True,
             ) as resp:
                 device_list = await resp.json()
-        except:
+        except Exception as ex:
+            _LOGGER.error("SmartThings error discovering TV devices: %s", str(ex))
             device_list = None
         
         if device_list:
-            _LOGGER.debug("SmartThings infos: %s", str(device_list))
+            _LOGGER.debug("SmartThings available devices: %s", str(device_list))
 
             for k in device_list.get("items", {}):
                 device_id = k.get("deviceId", "")
@@ -175,7 +176,7 @@ class SmartThingsTV:
         if not device_id:
             return
 
-        API_DEVICE = API_DEVICES + device_id
+        API_DEVICE = API_DEVICES + '/' + device_id
         API_COMMAND = API_DEVICE + "/commands"
 
         if self._refresh_status:
@@ -192,7 +193,7 @@ class SmartThingsTV:
         if not device_id:
             return
 
-        API_DEVICE = API_DEVICES + device_id
+        API_DEVICE = API_DEVICES + '/' + device_id
         API_DEVICE_HEALT = API_DEVICE + "/health"
         API_DEVICE_STATUS = API_DEVICE + "/states"
         API_DEVICE_MAIN_STATUS = API_DEVICE + "/components/main/status" #not used, just for reference
@@ -256,7 +257,7 @@ class SmartThingsTV:
         if not device_id:
             return
 
-        API_DEVICE = API_DEVICES + device_id
+        API_DEVICE = API_DEVICES + '/' + device_id
         API_COMMAND = API_DEVICE + "/commands"
         datacmd = None
 
