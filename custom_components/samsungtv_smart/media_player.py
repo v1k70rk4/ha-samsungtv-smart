@@ -364,14 +364,22 @@ class SamsungTVDevice(MediaPlayerDevice):
         if source_list:
             for i in range(len(source_list)):
                 try:
-                    # SmartThings source list is an array in which the odd element is the real input,
-                    # the pair element is the name assigned, so we skip pair (used for source key in the loop)
-                    if ((i+1) % 2) == 0:
-                        continue
-                    if source_list[i] in ["digitalTv", "TV"]:
-                        st_source_list[ source_list[i+1] ] = "ST_TV"
-                    elif source_list[i].startswith("HDMI"):
-                        st_source_list[ source_list[i+1] ] = "ST_" + source_list[i]
+                    # SmartThings source list is an array that may contain the input or the assigned name,
+                    # if we found a name that is not an input we use it as input name
+                    input_name = source_list[i]
+                    is_tv = input_name in ["digitalTv", "TV"]
+                    is_hdmi = input_name.startswith("HDMI")
+                    if is_tv or is_hdmi:
+                        input_type = "ST_TV" if is_tv else "ST_" + input_name
+                        if input_type in st_source_list.values():
+                            continue
+
+                        index = i + 1
+                        if index < len(source_list):
+                            next_input = source_list[index]
+                            if not (next_input in ["digitalTv", "TV"] or next_input.startswith("HDMI")):
+                                input_name = next_input
+                        st_source_list[input_name] = input_type
                 except Exception:
                     pass
 
