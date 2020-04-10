@@ -39,8 +39,16 @@ from .const import (
     RESULT_SUCCESS,
     RESULT_NOT_SUCCESSFUL,
     RESULT_WRONG_APIKEY,
+    RESULT_ST_NOT_FOUND,
     RESULT_MULTI_DEVICES,
 )
+
+CONFIG_RESULTS = {
+    RESULT_NOT_SUCCESSFUL: "Local connection to TV failed.",
+    RESULT_ST_NOT_FOUND: "SmartThings TV deviceID not found.",
+    RESULT_WRONG_APIKEY: "Wrong SmartThings token.",
+    RESULT_MULTI_DEVICES: "Multiple TVs found, unable to identify the SmartThings device to pair.",
+}
 
 CONF_ST_DEVICE = "st_devices"
 DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str, vol.Required(CONF_NAME): str, vol.Optional(CONF_API_KEY): str})
@@ -65,7 +73,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._tvinfo = None
         self._host = None
         self._api_key = None
-        self._deviceid = None
+        self._device_id = None
         self._name = None
         self._mac = None
         self._update_method = None
@@ -77,7 +85,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_HOST: self._host,
             CONF_NAME: self._tvinfo._name,
             CONF_ID: self._tvinfo._uuid,
-            CONF_MAC: self._mac,
+            CONF_MAC: self._mac if not self._tvinfo._macaddress else self._tvinfo._macaddress,
             CONF_DEVICE_NAME: self._tvinfo._device_name,
             CONF_DEVICE_MODEL: self._tvinfo._device_model,
             CONF_PORT: self._tvinfo._port,
@@ -85,9 +93,9 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         title = self._tvinfo._name
-        if self._api_key and self._deviceid:
+        if self._api_key and self._device_id:
             data[CONF_API_KEY] = self._api_key
-            data[CONF_DEVICE_ID] = self._deviceid
+            data[CONF_DEVICE_ID] = self._device_id
             title += " (SmartThings)"
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
         else:
@@ -127,21 +135,33 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             validate[id] = device_name
         return vol.Schema({vol.Required(CONF_ST_DEVICE): vol.In(validate)})
 
-    async def _try_connect(self, st_device_label = ""):
-        """Try to connect and check auth."""
-        self._tvinfo = SamsungTVInfo(self.hass, self._host, self._name)
-        session = self.hass.helpers.aiohttp_client.async_get_clientsession()
-        result = await self._tvinfo.get_device_info(session)
-        if result == RESULT_SUCCESS and self._api_key:
-            devices_list = self._remove_stdev_used(await self._tvinfo.get_st_devices(self._api_key, session, st_device_label))
-            if not devices_list:
-                return RESULT_WRONG_APIKEY
+    async def _get_st_deviceid(self, st_device_label=""):
+        """Try to detect SmartThings device id."""
+        if not self._tvinfo:
+            self._tvinfo = SamsungTVInfo(self.hass, self._host, self._name)
 
+        session = self.hass.helpers.aiohttp_client.async_get_clientsession()
+        devices_list = await self._tvinfo.get_st_devices(self._api_key, session, st_device_label)
+        if devices_list is None:
+            return RESULT_WRONG_APIKEY
+
+        devices_list = self._remove_stdev_used(devices_list)
+        if devices_list:
             if len(devices_list) > 1:
                 self._st_devices_schema = self._prepare_dev_schema(devices_list)
             else:
-                self._deviceid = list(devices_list.keys())[0]
-            
+                self._device_id = list(devices_list.keys())[0]
+
+        return RESULT_SUCCESS
+
+    async def _try_connect(self):
+        """Try to connect and check auth."""
+        if not self._tvinfo:
+            self._tvinfo = SamsungTVInfo(self.hass, self._host, self._name)
+
+        session = self.hass.helpers.aiohttp_client.async_get_clientsession()
+        result = await self._tvinfo.get_device_info(session, self._api_key, self._device_id)
+
         return result
 
     async def async_step_import(self, user_input=None):
@@ -161,6 +181,8 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._host = ip_address
             self._api_key = user_input.get(CONF_API_KEY)
             self._name = user_input.get(CONF_NAME)
+            self._device_id = user_input.get(CONF_DEVICE_ID)
+            self._mac = user_input.get(CONF_MAC, "")
             update_method = user_input.get(CONF_UPDATE_METHOD, "")
             if update_method:
                 self._update_method = update_method
@@ -170,30 +192,50 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._update_method = UPDATE_METHODS["Ping"]
             st_device_label = user_input.get(CONF_DEVICE_NAME, "")
             is_import = user_input.get(SOURCE_IMPORT, False)
-            
-            result = await self._try_connect(st_device_label)
-            if is_import and self._st_devices_schema:
-                result = RESULT_MULTI_DEVICES
-            
-            if result != RESULT_SUCCESS:
-                if is_import:
-                    _LOGGER.error("Error during setup of host %s using configuration.yaml info. Reason: %s", ip_address, result)
-                    return self.async_abort(reason=result)
-                else:
-                    return self._show_form({"base": result})
-            
-            mac = user_input.get(CONF_MAC, "")
-            self._mac = mac if not self._tvinfo._macaddress else self._tvinfo._macaddress 
 
-            if self._st_devices_schema:
-                return self._show_form(errors=None, step_id="stdevice")
-            else:
-                return self._get_entry()
+            result = RESULT_SUCCESS
+            if self._api_key and not self._device_id:
+                result = await self._get_st_deviceid(st_device_label)
+
+                if result == RESULT_SUCCESS and not self._device_id:
+                    if self._st_devices_schema:
+                        if not is_import:
+                            return self._show_form(errors=None, step_id="stdevice")
+                        result = RESULT_MULTI_DEVICES
+                    else:
+                        if not is_import:
+                            return self._show_form(errors=None, step_id="stdeviceid")
+                        result = RESULT_ST_NOT_FOUND
+
+            return await self._async_save_entry(result, is_import)
 
         return self._show_form()
 
     async def async_step_stdevice(self, user_input=None):
-        self._deviceid = user_input.get(CONF_ST_DEVICE)
+        self._device_id = user_input.get(CONF_ST_DEVICE)
+        return await self._async_save_entry()
+
+    async def async_step_stdeviceid(self, user_input=None):
+        self._device_id = user_input.get(CONF_DEVICE_ID)
+        return await self._async_save_entry()
+
+    async def _async_save_entry(self, result=RESULT_SUCCESS, is_import=False):
+
+        if result == RESULT_SUCCESS:
+            result = await self._try_connect()
+
+        if result != RESULT_SUCCESS:
+            if is_import:
+                _LOGGER.error(
+                    "Error during setup of host %s using configuration.yaml info. Reason: %s",
+                    self._host,
+                    CONFIG_RESULTS[result]
+                )
+                return self.async_abort(reason=result)
+            else:
+                step_id = "stdeviceid" if result == RESULT_ST_NOT_FOUND else "user"
+                return self._show_form({"base": result}, step_id)
+
         return self._get_entry()
 
     @callback
@@ -202,6 +244,8 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = DATA_SCHEMA
         if step_id=="stdevice":
             data_schema = self._st_devices_schema
+        elif step_id=="stdeviceid":
+            data_schema = vol.Schema({vol.Required(CONF_DEVICE_ID): str})
 
         return self.async_show_form(
             step_id=step_id,

@@ -9,11 +9,12 @@ UPDATE_METHODS = {
     "WebSockets": "websockets",
 }
 
-RESULT_SUCCESS = "success"
+RESULT_MULTI_DEVICES = "multiple_st_device"
 RESULT_NOT_SUCCESSFUL = "not_successful"
 RESULT_NOT_SUPPORTED = "not_supported"
+RESULT_ST_NOT_FOUND = "st_not_found"
+RESULT_SUCCESS = "success"
 RESULT_WRONG_APIKEY = "wrong_api_key"
-RESULT_MULTI_DEVICES = "multiple_st_device"
 
 DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001

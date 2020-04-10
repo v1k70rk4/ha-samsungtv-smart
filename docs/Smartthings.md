@@ -20,12 +20,24 @@ Once the SmartThings token has been generated, you need to configure the compone
 
 **Note:** if the component has been already configured for your TV, you must delete it from the HA web interface and then re-configure it to enable SmartThings integration.<br/>
 
+#### SmartThings Device ID
+
+If during configuration flow automatic detection of SmartThings device ID fails, a new configuration page will open requesting you to manual 
+insert it.
+To identify your TV device ID use the following steps:
+
+- Go [here](https://graph-eu01-euwest1.api.smartthings.com/device/list) and login with your SmartThings credential
+- Click on the name of your TV from the list of available devices
+- In the new page search the row called `Current States` and look for the property called `di`
+- Copy the value (is a UUID code) and paste it in the HomeAssistant configuration page
+
+
 
 ***Benefits of Enabling SmartThings***
 ---------------
 
-- Better states for running apps (read [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/App_list.md) for more information)
-- New keys available (read more below about [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md#smartthings-keys))
+- Better states for running apps (read [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/App_list.md) for more information)
+- New keys available (read more below about [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))
 - Shows TV channel names
 - Shows accurate states for HDMI or TV input sources
 

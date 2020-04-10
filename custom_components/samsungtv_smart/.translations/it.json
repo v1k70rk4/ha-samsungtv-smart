@@ -7,14 +7,16 @@
             "auth_missing": "Home Assistant non \u00e8 autorizzato a connettersi a questo Samsung TV. Controlla le impostazioni del tuo TV per autorizzare Home Assistant.",
             "not_successful": "Impossibile connettersi a questo dispositivo Samsung TV.",
             "not_supported": "Questo dispositivo Samsung TV non \u00e8 attualmente supportato.",
-            "wrong_api_key": "SmartThings token errato o TV non registrato su SmartThings.",
+            "wrong_api_key": "SmartThings token errato.",
+            "st_not_found": "SmartThings TV deviceID non trovato.",
             "multiple_st_device": "Trovati multipli TV, impossibile identificare il dispositivo SmartThings da associare."
         },
         "error": {
             "auth_missing": "Home Assistant non \u00e8 autorizzato a connettersi a questo Samsung TV. Controlla le impostazioni del tuo TV per autorizzare Home Assistant.",
             "not_successful": "Impossibile connettersi a questo dispositivo Samsung TV.",
             "not_supported": "Questo dispositivo Samsung TV non \u00e8 attualmente supportato.",
-            "wrong_api_key": "SmartThings token errato o TV non registrato su SmartThings."
+            "wrong_api_key": "SmartThings token errato.",
+            "st_not_found": "SmartThings TV deviceID non trovato."
         },
         "flow_title": "SamsungTV Smart: {model}",
         "step": {
@@ -36,6 +38,13 @@
                     "st_devices": "SmartThings TV"
                 },
                 "description": "Hai più di un TV configurato sul tuo account. Seleziona il TV che stai configurando dalla lista.",
+                "title": "SamsungTV Smart"
+            },
+            "stdeviceid": {
+                "data": {
+                    "device_id": "SmartThings TV deviceID"
+                },
+                "description": "Identificazione automatica del deviceID SmartThings fallita. Per continuare devi identificare il deviceID sul sito SmartThings (vedere documentazione) e inserirlo qui.",
                 "title": "SamsungTV Smart"
             }
         },

@@ -4,7 +4,7 @@ import socket
 import asyncio
 import logging
 import os
-from aiohttp import ClientConnectionError, ClientSession
+from aiohttp import ClientConnectionError, ClientSession, ClientResponseError
 from async_timeout import timeout
 from .websockets import SamsungTVWS
 from .exceptions import ConnectionFailure
@@ -51,6 +51,7 @@ from .const import (
     RESULT_SUCCESS,
     RESULT_NOT_SUCCESSFUL,
     RESULT_NOT_SUPPORTED,
+    RESULT_ST_NOT_FOUND,
     RESULT_WRONG_APIKEY,
 )
 
@@ -85,7 +86,7 @@ CONFIG_SCHEMA = vol.Schema(
                         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
                         vol.Optional(CONF_API_KEY): cv.string,
                         vol.Optional(CONF_DEVICE_NAME): cv.string,
-                        #vol.Optional(CONF_DEVICE_ID): cv.string,
+                        vol.Optional(CONF_DEVICE_ID): cv.string,
                 }).extend(SAMSMART_SCHEMA),
             ],
             ensure_unique_hosts,
@@ -132,6 +133,8 @@ class SamsungTVInfo:
         return token_file
 
     def _try_connect_ws(self):
+        """Try to connect to device using web sockets on port 8001 and 8002"""
+
         for port in (8001, 8002):
 
             try:
@@ -147,25 +150,52 @@ class SamsungTVInfo:
                 _LOGGER.debug("Working config with port: %s", str(port))
                 self._port = port
                 return RESULT_SUCCESS
-            except WebSocketException:
-                _LOGGER.debug("Working but unsupported config on port: %s", str(port))
-                #return RESULT_NOT_SUPPORTED
-            except (OSError, ConnectionFailure) as err:
+            except (OSError, ConnectionFailure, WebSocketException) as err:
                 _LOGGER.debug("Failing config with port: %s, error: %s", str(port), err)
     
         return RESULT_NOT_SUCCESSFUL
 
+    async def _try_connect_st(self, api_key, device_id, session: ClientSession):
+        """Try to connect to ST device"""
+
+        try:
+            with timeout(4):
+                _LOGGER.debug("Try connection to SmartThings TV with id [%s]", device_id)
+                with SmartThingsTV(
+                        api_key=api_key,
+                        device_id=device_id,
+                        session=session,
+                ) as st:
+                    result = await st.async_device_health()
+                if result:
+                    _LOGGER.debug("Connection completed successfully.")
+                    return RESULT_SUCCESS
+                else:
+                    _LOGGER.debug("Connection not available.")
+                    return RESULT_ST_NOT_FOUND
+        except ClientResponseError as err:
+            _LOGGER.debug("Failed connecting to SmartThings deviceID, error: %s", err)
+            if err.status == 400: #Bad request, means that token is valid
+                return RESULT_ST_NOT_FOUND
+        except Exception as err:
+            _LOGGER.debug("Failed connecting with SmartThings, error: %s", err)
+
+        return RESULT_WRONG_APIKEY
+
     async def get_st_devices(self, api_key, session: ClientSession, st_device_label=""):
-        devices = {}
+        """Get list of available ST devices"""
+
         try:
             with timeout(4):
                 devices = await SmartThingsTV.get_devices_list(api_key, session, st_device_label)
-        except (asyncio.TimeoutError, ClientConnectionError) as ex:
-            pass
+        except Exception as err:
+            _LOGGER.debug("Failed connecting with SmartThings, error: %s", err)
+            return None
 
         return devices
 
-    async def get_device_info(self, session: ClientSession):
+    async def get_device_info(self, session: ClientSession, api_key = None, st_device_id = None):
+        """Get device information"""
 
         if session is None:
             return RESULT_NOT_SUCCESSFUL
@@ -200,7 +230,9 @@ class SamsungTVInfo:
             self._name = self._device_name
         self._device_model = device.get("modelName")
         self._device_os = device.get("OS")
-        self._tokensupport = device.get("TokenAuthSupport")
+        self._token_support = device.get("TokenAuthSupport")
+        if api_key and st_device_id:
+            result = await self._try_connect_st(api_key, st_device_id, session)
 
         return result
 

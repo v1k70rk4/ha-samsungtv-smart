@@ -6,8 +6,11 @@
 
 # HomeAssistant - SamsungTV Smart Component
 
->***Warning: From April 8th, component configuration with SmartThings is not working because an API from SmartThings server is not returning anymore the list of available devices. Waiting some days for API to be restored, then I will search an alternative configuration method.<br/>
-The devices already configured still working properly with SmartThings, but some states (like channel name and application running) are not properly reported.***
+>***Warning: From April 8th, an API from SmartThings server is not returning anymore the list of available devices. 
+>In this case a new configuration page will ask you to manually insert the SmartThings deviceID. 
+>Use [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartThings-device-id)
+> to identify the correct value to use and complete the configuration.***<br/>
+>**The devices already configured work properly with SmartThings and nor require to be reconfigured.**
 
 This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra features.<br/>
 **This plugin is only for 2016+ TVs model!** (maybe all tizen family)
@@ -68,7 +71,7 @@ There are two ways of doing so:
 
 **Important**: To complete the configuration procedure properly, you must be sure that your **TV is turned on and connected to the LAN (wired or wireless)**. Stay near to your TV during configuration because probably you will need to accept the access request that will prompt on your TV screen.
 
-**Note**: To configure the component for using **SmartThings (strongly suggested)** you need to generate an access token as explained in [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md). Also make sure your **TV is logged into your SmartThings account** before starting configuration.
+**Note**: To configure the component for using **SmartThings (strongly suggested)** you need to generate an access token as explained in [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md). Also make sure your **TV is logged into your SmartThings account** before starting configuration.
 
 ### Option A: Configuration using the web UI [**recommended**]
 
@@ -108,10 +111,18 @@ Then you can add any of the following parameters:<br/>
 
 - **api_key:**<br/>
 (string)(Optional)<br/>
-API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md#smartthings-keys))<br/>
-Read [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md)<br/>
+API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))<br/>
+Read [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md)<br/>
 This parameter can also be provided during the component configuration using the user interface.<br/>
-**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must before delete the integration from UI.**<br/>
+**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must delete the integration from UI.**<br/>
+
+- **device_id:**<br/>
+(string)(Optional)<br/>
+Device ID for the SmartThings Cloud API. This is optional, to be used only if component fails to automatically determinate it.
+Read [SmartThings Device ID](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-device-id)
+to understand how identify the correct value to use.<br/>
+This parameter will be requested during component configuration from user interface when required.<br/>
+**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must delete the integration from UI.**<br/>
 
 - **device_name:**<br/>
 (string)(Optional)<br/>
@@ -128,11 +139,11 @@ The mac-address is used to turn on the TV. If you set it manually, you must find
 (json)(Optional)<br/>
 This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
 Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
-If SmartThings is [configured](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md) and the source_list not, the component will try to identify and configure automatically the sources configured on the TV with the relative associated names (new feature, tested on QLed TV). The created list is available in the HA log file.<br/>
+If SmartThings is [configured](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md) and the source_list not, the component will try to identify and configure automatically the sources configured on the TV with the relative associated names (new feature, tested on QLed TV). The created list is available in the HA log file.<br/>
 You can also chain KEYS, example: '{"TV": "KEY_SOURCES+KEY_ENTER"}'<br/>
 And even add delays (in milliseconds) between sending KEYS, example:<br/>
     '{"TV": "KEY_SOURCES+500+KEY_ENTER"}'<br/>
-Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Key_codes.md) / [key patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Key_chaining.md)<br/>
+Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md) / [key patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_chaining.md)<br/>
 **Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings) (under "Mode Settings")**<br/>
     
 - **app_list:**<br/>
@@ -140,7 +151,7 @@ Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/
 This contains the APPS visible sources in the dropdown list in media player UI.<br/>
 Default value: AUTOGENERATED<br/>
 Autogenerated list is limited to few application (the most common). To have other applications, the list must be set manually.
-If the source_list is not configured, during startup is generated a file in the custom component folder with the list of all available applications. This list can be used to create a manual list following [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/App_list.md)<br/>
+If the source_list is not configured, during startup is generated a file in the custom component folder with the list of all available applications. This list can be used to create a manual list following [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/App_list.md)<br/>
 Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'<br/>
 Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), [List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
 **Note: Although this setting is optional, it is highly recommended (for best performance) to set it manually and not rely on the autogenerated list.**<br/>
@@ -165,7 +176,7 @@ If the SmartThings API is enabled (by settings "api_key" and "device_id"), then 
 (boolean)(Optional)<br/>
 This option is `True` by default. In some cases (if numerical IDs are used when setting `app_list`) HTTP polling will be used (1 request per app) to get the running app.<br/>
 This is a lengthy task that some may want to disable, you can do so by setting this option to `False`.<br/>
-For more information about how we get the running app, read the [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/App_list.md).<br/>
+For more information about how we get the running app, read the [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/App_list.md).<br/>
 
 - **broadcast_address:**<br/>
 (string)(Optional)<br/>
@@ -213,7 +224,7 @@ service: media_player.play_media
   "media_content_id": "KEY_CODE",
 }
 ```
-**Note**: Change "KEY_CODEKEY" by desired key_code. (also works with key chaining and SmartThings keys: ST_TV, ST_HDMI1, ST_HDMI2, ST_HDMI3, etc. / see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Smartthings.md#smartthings-keys))
+**Note**: Change "KEY_CODEKEY" by desired key_code. (also works with key chaining and SmartThings keys: ST_TV, ST_HDMI1, ST_HDMI2, ST_HDMI3, etc. / see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))
 
 Script example:
 ```
@@ -230,14 +241,14 @@ tv_channel_down:
 
 ***Key Codes***
 ---------------
-To see the complete list of known keys, [check this list](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Key_codes.md)
+To see the complete list of known keys, [check this list](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md)
 
 
 ***Key Chaining Patterns***
 ---------------
 Key chaining is also supported, which means a pattern of keys can be set by delimiting the keys with the "+" symbol, delays can also be set in milliseconds between the "+" symbols.
 
-[See the list of known Key Chaining Patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/Key_chaining.md)
+[See the list of known Key Chaining Patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_chaining.md)
 
 
 ***Open Browser Page***

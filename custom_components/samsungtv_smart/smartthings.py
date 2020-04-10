@@ -139,20 +139,18 @@ class SmartThingsTV:
 
     @staticmethod
     async def get_devices_list(api_key, session: ClientSession, device_label = ""):
+        """Get list of available devices"""
 
         result = {}
-        
-        try:
-            async with session.get(
-                API_DEVICES,
-                headers=_headers(api_key),
-                raise_for_status=True,
-            ) as resp:
-                device_list = await resp.json()
-        except Exception as ex:
-            _LOGGER.error("SmartThings error discovering TV devices: %s", str(ex))
-            device_list = None
-        
+        api_list_devices = f"{API_DEVICES}"
+
+        async with session.get(
+            api_list_devices,
+            headers=_headers(api_key),
+            raise_for_status=True,
+        ) as resp:
+            device_list = await resp.json()
+
         if device_list:
             _LOGGER.debug("SmartThings available devices: %s", str(device_list))
 
@@ -171,36 +169,36 @@ class SmartThingsTV:
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def _device_refresh(self, **kwargs):
+        """Refresh device status on SmartThings"""
 
         device_id = self._device_id
         if not device_id:
             return
 
-        API_DEVICE = f"{API_DEVICES}/{device_id}"
-        API_COMMAND = f"{API_DEVICE}/commands"
+        api_device = f"{API_DEVICES}/{device_id}"
+        api_command = f"{api_device}/commands"
 
         if self._refresh_status:
             await self._session.post(
-                API_COMMAND,
+                api_command,
                 headers=_headers(self._api_key),
                 data=COMMAND_REFRESH,
                 raise_for_status=True,
             )
 
-    async def async_device_update(self):
+    async def async_device_health(self):
+        """Check device availability"""
 
         device_id = self._device_id
         if not device_id:
-            return
+            return False
 
-        API_DEVICE = f"{API_DEVICES}/{device_id}"
-        API_DEVICE_HEALT = f"{API_DEVICE}/health"
-        API_DEVICE_STATUS = f"{API_DEVICE}/states"
-        API_DEVICE_MAIN_STATUS = f"{API_DEVICE}/components/main/status" #not used, just for reference
+        api_device = f"{API_DEVICES}/{device_id}"
+        api_device_health = f"{api_device}/health"
 
         # this get the real status of the device
         async with self._session.get(
-            API_DEVICE_HEALT,
+            api_device_health,
             headers=_headers(self._api_key),
             raise_for_status=True,
         ) as resp:
@@ -209,6 +207,22 @@ class SmartThingsTV:
         _LOGGER.debug(health)
 
         if health['state'] == "ONLINE":
+            return True
+        return False
+
+    async def async_device_update(self):
+        """Query device status on SmartThing"""
+
+        device_id = self._device_id
+        if not device_id:
+            return
+
+        api_device = f"{API_DEVICES}/{device_id}"
+        api_device_status = f"{api_device}/states"
+        api_device_main_status = f"{api_device}/components/main/status" #not used, just for reference
+
+        is_online = await self.async_device_health()
+        if is_online:
             self._state = STATE_ON
         else:
             self._state = STATE_OFF
@@ -217,7 +231,7 @@ class SmartThingsTV:
         await self._device_refresh()
 
         async with self._session.get(
-            API_DEVICE_STATUS,
+            api_device_status,
             headers=_headers(self._api_key),
             raise_for_status=True,
         ) as resp:
@@ -225,7 +239,7 @@ class SmartThingsTV:
 
         _LOGGER.debug(data)
 
-        device_state = data['main']['switch']['value']
+        #device_state = data['main']['switch']['value']
         device_volume = data['main']['volume']['value']
         device_volume = int(device_volume) / 100
         device_muted = data['main']['mute']['value'] 
@@ -241,7 +255,7 @@ class SmartThingsTV:
         else:
             self._muted = False
             
-        if (self._prev_source != device_source or self._prev_channel != device_tv_chan or self._prev_channel_name != device_tv_chan_name):
+        if self._prev_source != device_source or self._prev_channel != device_tv_chan or self._prev_channel_name != device_tv_chan_name:
             self._source = device_source
             self._prev_source = device_source
             # if the status is not refreshed this info may become not reliable
@@ -252,13 +266,14 @@ class SmartThingsTV:
                 self._prev_channel_name = device_tv_chan_name
 
     async def async_send_command(self, cmdtype, command = ""):
+        """Send a command too the device"""
 
         device_id = self._device_id
         if not device_id:
             return
 
-        API_DEVICE = f"{API_DEVICES}/{device_id}"
-        API_COMMAND = f"{API_DEVICE}/commands"
+        api_device = f"{API_DEVICES}/{device_id}"
+        api_command = f"{api_device}/commands"
         datacmd = None
 
         if cmdtype == "turn_off": # turns off
@@ -296,7 +311,7 @@ class SmartThingsTV:
             
         if datacmd:
            await self._session.post(
-               API_COMMAND,
+               api_command,
                headers=_headers(self._api_key),
                data=datacmd,
                raise_for_status=True,

@@ -14,7 +14,7 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 
 from typing import Any, Dict, List, Optional
-from aiohttp import ClientConnectionError, ClientSession
+from aiohttp import ClientConnectionError, ClientSession, ClientResponseError
 from async_timeout import timeout
 
 from .websockets import SamsungTVWS
@@ -509,8 +509,8 @@ class SamsungTVDevice(MediaPlayerDevice):
             try:
                 with timeout(ST_UPDATE_TIMEOUT):
                     await self._st.async_device_update()
-            except (asyncio.TimeoutError, ClientConnectionError) as ex:
-                _LOGGER.error("Samsung TV - Error refreshing from SmartThings")
+            except (asyncio.TimeoutError, ClientConnectionError, ClientResponseError) as ex:
+                _LOGGER.error("SamsungTV Smart - Error refreshing from SmartThings. Error: [%s]", ex)
 
         await self._async_ping_device()
 
