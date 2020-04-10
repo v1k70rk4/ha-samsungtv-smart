@@ -1,4 +1,4 @@
-# HomeAssistant - SamsungTV Tizen Component
+# HomeAssistant - SamsungTV Smart Component
 
 ***Key Chaining Patterns***
 ---------------
