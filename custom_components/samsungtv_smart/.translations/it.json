@@ -8,15 +8,17 @@
             "not_successful": "Impossibile connettersi a questo dispositivo Samsung TV.",
             "not_supported": "Questo dispositivo Samsung TV non \u00e8 attualmente supportato.",
             "wrong_api_key": "SmartThings token errato.",
-            "st_not_found": "SmartThings TV deviceID non trovato.",
-            "multiple_st_device": "Trovati multipli TV, impossibile identificare il dispositivo SmartThings da associare."
+            "st_device_not_found": "SmartThings TV deviceID non trovato.",
+            "st_device_used": "SmartThings TV deviceID gi\u00e0 utilizzato.",
+            "st_multiple_device": "Trovati multipli TV, impossibile identificare il dispositivo SmartThings da associare."
         },
         "error": {
             "auth_missing": "Home Assistant non \u00e8 autorizzato a connettersi a questo Samsung TV. Controlla le impostazioni del tuo TV per autorizzare Home Assistant.",
             "not_successful": "Impossibile connettersi a questo dispositivo Samsung TV.",
             "not_supported": "Questo dispositivo Samsung TV non \u00e8 attualmente supportato.",
             "wrong_api_key": "SmartThings token errato.",
-            "st_not_found": "SmartThings TV deviceID non trovato."
+            "st_device_not_found": "SmartThings TV deviceID non trovato.",
+            "st_device_used": "SmartThings TV deviceID gi\u00e0 utilizzato."
         },
         "flow_title": "SamsungTV Smart: {model}",
         "step": {

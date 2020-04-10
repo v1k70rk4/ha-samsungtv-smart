@@ -8,15 +8,17 @@
             "not_successful": "Unable to connect to this Samsung TV device.",
             "not_supported": "This Samsung TV device is currently not supported.",
             "wrong_api_key": "Wrong SmartThings token.",
-            "st_not_found": "SmartThings TV deviceID not found.",
-            "multiple_st_device": "Multiple TVs found, unable to identify the SmartThings device to pair."
+            "st_device_not_found": "SmartThings TV deviceID not found.",
+            "st_device_used": "SmartThings TV deviceID already used.",
+            "st_multiple_device": "Multiple TVs found, unable to identify the SmartThings device to pair."
         },
         "error": {
             "auth_missing": "Home Assistant is not authorized to connect to this Samsung TV. Please check your TV's settings to authorize Home Assistant.",
             "not_successful": "Unable to connect to this Samsung TV device.",
             "not_supported": "This Samsung TV device is currently not supported.",
             "wrong_api_key": "Wrong SmartThings token.",
-            "st_not_found": "SmartThings TV deviceID not found."
+            "st_device_not_found": "SmartThings TV deviceID not found.",
+            "st_device_used": "SmartThings TV deviceID already used."
         },
         "flow_title": "SamsungTV Smart: {model}",
         "step": {

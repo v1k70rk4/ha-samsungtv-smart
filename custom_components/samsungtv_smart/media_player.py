@@ -339,7 +339,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                             ) as resp:
                                 data = await resp.text()
                     except (asyncio.TimeoutError, ClientConnectionError) as ex:
-                        _LOGGER.debug("Error getting HTTP info for app: " + app)
+                        _LOGGER.debug("Error getting HTTP info for app: %s - error: %s", app, ex)
                         break # if we have exceptions here is because TV is not reachable, there are no reason to continue the loop
 
                     if data is not None:
@@ -510,7 +510,8 @@ class SamsungTVDevice(MediaPlayerDevice):
                 with timeout(ST_UPDATE_TIMEOUT):
                     await self._st.async_device_update()
             except (asyncio.TimeoutError, ClientConnectionError, ClientResponseError) as ex:
-                _LOGGER.error("SamsungTV Smart - Error refreshing from SmartThings. Error: [%s]", ex)
+                _LOGGER.error("SamsungTV Smart - Error refreshing from SmartThings")
+                _LOGGER.debug("SamsungTV Smart - Error: [%s]", ex)
 
         await self._async_ping_device()
 

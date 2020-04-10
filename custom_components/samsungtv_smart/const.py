@@ -9,10 +9,11 @@ UPDATE_METHODS = {
     "WebSockets": "websockets",
 }
 
-RESULT_MULTI_DEVICES = "multiple_st_device"
 RESULT_NOT_SUCCESSFUL = "not_successful"
 RESULT_NOT_SUPPORTED = "not_supported"
-RESULT_ST_NOT_FOUND = "st_not_found"
+RESULT_ST_DEVICE_USED = "st_device_used"
+RESULT_ST_DEVICE_NOT_FOUND = "st_device_not_found"
+RESULT_ST_MULTI_DEVICES = "st_multiple_device"
 RESULT_SUCCESS = "success"
 RESULT_WRONG_APIKEY = "wrong_api_key"
 

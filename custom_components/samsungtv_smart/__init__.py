@@ -48,10 +48,10 @@ from .const import (
     DEFAULT_SOURCE_LIST,
     UPDATE_METHODS,
     WS_PREFIX,
-    RESULT_SUCCESS,
     RESULT_NOT_SUCCESSFUL,
     RESULT_NOT_SUPPORTED,
-    RESULT_ST_NOT_FOUND,
+    RESULT_ST_DEVICE_NOT_FOUND,
+    RESULT_SUCCESS,
     RESULT_WRONG_APIKEY,
 )
 
@@ -172,17 +172,18 @@ class SamsungTVInfo:
                     return RESULT_SUCCESS
                 else:
                     _LOGGER.debug("Connection not available.")
-                    return RESULT_ST_NOT_FOUND
+                    return RESULT_ST_DEVICE_NOT_FOUND
         except ClientResponseError as err:
             _LOGGER.debug("Failed connecting to SmartThings deviceID, error: %s", err)
             if err.status == 400: #Bad request, means that token is valid
-                return RESULT_ST_NOT_FOUND
+                return RESULT_ST_DEVICE_NOT_FOUND
         except Exception as err:
             _LOGGER.debug("Failed connecting with SmartThings, error: %s", err)
 
         return RESULT_WRONG_APIKEY
 
-    async def get_st_devices(self, api_key, session: ClientSession, st_device_label=""):
+    @staticmethod
+    async def get_st_devices(api_key, session: ClientSession, st_device_label=""):
         """Get list of available ST devices"""
 
         try:
