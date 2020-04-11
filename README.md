@@ -6,12 +6,6 @@
 
 # HomeAssistant - SamsungTV Smart Component
 
->***Warning: From April 8th, an API from SmartThings server is not returning anymore the list of available devices. 
->In this case a new configuration page will ask you to manually insert the SmartThings deviceID. 
->Use [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartThings-device-id)
-> to identify the correct value to use and complete the configuration.***<br/>
->**The devices already configured work properly with SmartThings and nor require to be reconfigured.**
-
 This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra features.<br/>
 **This plugin is only for 2016+ TVs model!** (maybe all tizen family)
 

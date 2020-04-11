@@ -16,7 +16,8 @@ from homeassistant.const import (
 API_BASEURL = "https://api.smartthings.com/v1"
 API_DEVICES = f"{API_BASEURL}/devices"
 
-DEVICE_TYPE_OCFTV = "f7b59139-a784-41d1-8624-56d10931b6c3"
+DEVICE_TYPE_OCF = "OCF"
+DEVICE_TYPEID_OCF = "f7b59139-a784-41d1-8624-56d10931b6c3"
 
 COMMAND_POWER_OFF = "{'commands': [{'component': 'main','capability': 'switch','command': 'off'}]}"
 COMMAND_POWER_ON = "{'commands': [{'component': 'main','capability': 'switch','command': 'on'}]}"
@@ -45,7 +46,8 @@ _LOGGER = logging.getLogger(__name__)
 
 def _headers(api_key: str) -> Dict[str, str]:
     return {
-        "Authorization": "Bearer " + api_key,
+        'Authorization': f'Bearer {api_key}',
+        'Accept': 'application/json',
     }
 
 class SmartThingsTV:
@@ -142,10 +144,9 @@ class SmartThingsTV:
         """Get list of available devices"""
 
         result = {}
-        api_list_devices = f"{API_DEVICES}"
 
         async with session.get(
-            api_list_devices,
+            API_DEVICES,
             headers=_headers(api_key),
             raise_for_status=True,
         ) as resp:
@@ -154,15 +155,16 @@ class SmartThingsTV:
         if device_list:
             _LOGGER.debug("SmartThings available devices: %s", str(device_list))
 
-            for k in device_list.get("items", {}):
+            for k in device_list.get("items", []):
                 device_id = k.get("deviceId", "")
-                device_type = k.get("deviceTypeId", "")
-                if device_id and device_type == DEVICE_TYPE_OCFTV:
+                device_type = k.get("type", "")
+                device_type_id = k.get("deviceTypeId", "")
+                if device_id and (device_type_id == DEVICE_TYPEID_OCF or device_type == DEVICE_TYPE_OCF):
                     label = k.get("label", "")
                     if device_label == "" or (label == device_label and label != ""):
                         result.setdefault(device_id, {})["name"] = k.get("name", "")
                         result.setdefault(device_id, {})["label"] = label
-            
+
         _LOGGER.info("SmartThings discovered TV devices: %s", str(result))
         
         return result
