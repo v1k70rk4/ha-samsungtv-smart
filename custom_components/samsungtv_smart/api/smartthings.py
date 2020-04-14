@@ -1,65 +1,99 @@
-#Smartthings TV integration#
-import asyncio
+""" Smartthings TV integration """
+
 from datetime import timedelta
-from async_timeout import timeout
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 from aiohttp import ClientSession
 import json
-import os
 
 from homeassistant.util import Throttle
 from homeassistant.const import (
     STATE_OFF,
     STATE_ON,
 )
+
 API_BASEURL = "https://api.smartthings.com/v1"
 API_DEVICES = f"{API_BASEURL}/devices"
 
 DEVICE_TYPE_OCF = "OCF"
 DEVICE_TYPEID_OCF = "f7b59139-a784-41d1-8624-56d10931b6c3"
 
-COMMAND_POWER_OFF = "{'commands': [{'component': 'main','capability': 'switch','command': 'off'}]}"
-COMMAND_POWER_ON = "{'commands': [{'component': 'main','capability': 'switch','command': 'on'}]}"
-COMMAND_REFRESH = "{'commands':[{'component': 'main','capability': 'refresh','command': 'refresh'}]}"
-COMMAND_PAUSE = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'pause'}]}"
-COMMAND_MUTE = "{'commands':[{'component': 'main','capability': 'audioMute','command': 'mute'}]}"
-COMMAND_UNMUTE = "{'commands':[{'component': 'main','capability': 'audioMute','command': 'unmute'}]}"
-COMMAND_VOLUME_UP = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeUp'}]}"
-COMMAND_VOLUME_DOWN = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeDown'}]}"
-COMMAND_PLAY = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'play'}]}"
-COMMAND_STOP = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'stop'}]}"
-COMMAND_REWIND = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'rewind'}]}"
-COMMAND_FAST_FORWARD = "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'fastForward'}]}"
-COMMAND_CHANNEL_UP = "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'channelUp'}]}"
-COMMAND_CHANNEL_DOWN = "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'channelDown'}]}"
+COMMAND_POWER_OFF = (
+    "{'commands': [{'component': 'main','capability': 'switch','command': 'off'}]}"
+)
+COMMAND_POWER_ON = (
+    "{'commands': [{'component': 'main','capability': 'switch','command': 'on'}]}"
+)
+COMMAND_REFRESH = (
+    "{'commands':[{'component': 'main','capability': 'refresh','command': 'refresh'}]}"
+)
+COMMAND_PAUSE = (
+    "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'pause'}]}"
+)
+COMMAND_MUTE = (
+    "{'commands':[{'component': 'main','capability': 'audioMute','command': 'mute'}]}"
+)
+COMMAND_UNMUTE = (
+    "{'commands':[{'component': 'main','capability': 'audioMute','command': 'unmute'}]}"
+)
+COMMAND_VOLUME_UP = (
+    "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeUp'}]}"
+)
+COMMAND_VOLUME_DOWN = (
+    "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'volumeDown'}]}"
+)
+COMMAND_PLAY = (
+    "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'play'}]}"
+)
+COMMAND_STOP = (
+    "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'stop'}]}"
+)
+COMMAND_REWIND = (
+    "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'rewind'}]}"
+)
+COMMAND_FAST_FORWARD = (
+    "{'commands':[{'component': 'main','capability': 'mediaPlayback','command': 'fastForward'}]}"
+)
+COMMAND_CHANNEL_UP = (
+    "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'channelUp'}]}"
+)
+COMMAND_CHANNEL_DOWN = (
+    "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'channelDown'}]}"
+)
 
-COMMAND_SET_VOLUME = "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'setVolume','arguments': "
-ARGS_SET_VOLUME  = "[{}]}}]}}"
-COMMAND_SET_SOURCE =  "{'commands':[{'component': 'main','capability': 'mediaInputSource','command': 'setInputSource', 'arguments': "
-ARGS_SET_SOURCE  = "['{}']}}]}}"
-COMMAND_SET_CHANNEL =  "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'setTvChannel', 'arguments': "
-ARGS_SET_CHANNEL  = "['{}']}}]}}"
+COMMAND_SET_VOLUME = (
+    "{'commands':[{'component': 'main','capability': 'audioVolume','command': 'setVolume','arguments': "
+)
+ARGS_SET_VOLUME = "[{}]}}]}}"
+COMMAND_SET_SOURCE = (
+    "{'commands':[{'component': 'main','capability': 'mediaInputSource','command': 'setInputSource', 'arguments': "
+)
+ARGS_SET_SOURCE = "['{}']}}]}}"
+COMMAND_SET_CHANNEL = (
+    "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'setTvChannel', 'arguments': "
+)
+ARGS_SET_CHANNEL = "['{}']}}]}}"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=10)
 _LOGGER = logging.getLogger(__name__)
 
+
 def _headers(api_key: str) -> Dict[str, str]:
     return {
-        'Authorization': f'Bearer {api_key}',
-        'Accept': 'application/json',
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "application/json",
     }
 
-class SmartThingsTV:
 
+class SmartThingsTV:
     def __init__(
-            self,
-            api_key: str,
-            device_id: str,
-            refresh_status: bool = True,
-            session: Optional[ClientSession] = None,
+        self,
+        api_key: str,
+        device_id: str,
+        refresh_status: bool = True,
+        session: Optional[ClientSession] = None,
     ):
-   
+
         """Initialize SmartThingsTV."""
         self._api_key = api_key
         self._device_id = device_id
@@ -70,7 +104,7 @@ class SmartThingsTV:
         else:
             self._session = ClientSession()
             self._managed_session = True
-            
+
         self._device_name = None
         self._state = STATE_OFF
         self._muted = False
@@ -134,21 +168,24 @@ class SmartThingsTV:
         """Return currently channel_name."""
         return self._channel_name
 
+    @property
+    def source_list(self):
+        """Return currently channel_name."""
+        return self._source_list
+
     def set_application(self, appid):
         if self._refresh_status:
             self._channel = ""
             self._channel_name = appid
 
     @staticmethod
-    async def get_devices_list(api_key, session: ClientSession, device_label = ""):
+    async def get_devices_list(api_key, session: ClientSession, device_label=""):
         """Get list of available devices"""
 
         result = {}
 
         async with session.get(
-            API_DEVICES,
-            headers=_headers(api_key),
-            raise_for_status=True,
+            API_DEVICES, headers=_headers(api_key), raise_for_status=True,
         ) as resp:
             device_list = await resp.json()
 
@@ -159,14 +196,17 @@ class SmartThingsTV:
                 device_id = k.get("deviceId", "")
                 device_type = k.get("type", "")
                 device_type_id = k.get("deviceTypeId", "")
-                if device_id and (device_type_id == DEVICE_TYPEID_OCF or device_type == DEVICE_TYPE_OCF):
+                if device_id and (
+                    device_type_id == DEVICE_TYPEID_OCF
+                    or device_type == DEVICE_TYPE_OCF
+                ):
                     label = k.get("label", "")
                     if device_label == "" or (label == device_label and label != ""):
                         result.setdefault(device_id, {})["name"] = k.get("name", "")
                         result.setdefault(device_id, {})["label"] = label
 
         _LOGGER.info("SmartThings discovered TV devices: %s", str(result))
-        
+
         return result
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
@@ -200,15 +240,13 @@ class SmartThingsTV:
 
         # this get the real status of the device
         async with self._session.get(
-            api_device_health,
-            headers=_headers(self._api_key),
-            raise_for_status=True,
+            api_device_health, headers=_headers(self._api_key), raise_for_status=True,
         ) as resp:
             health = await resp.json()
 
         _LOGGER.debug(health)
 
-        if health['state'] == "ONLINE":
+        if health["state"] == "ONLINE":
             return True
         return False
 
@@ -221,7 +259,8 @@ class SmartThingsTV:
 
         api_device = f"{API_DEVICES}/{device_id}"
         api_device_status = f"{api_device}/states"
-        api_device_main_status = f"{api_device}/components/main/status" #not used, just for reference
+        # not used, just for reference
+        api_device_main_status = f"{api_device}/components/main/status"
 
         is_online = await self.async_device_health()
         if is_online:
@@ -233,22 +272,20 @@ class SmartThingsTV:
         await self._device_refresh()
 
         async with self._session.get(
-            api_device_status,
-            headers=_headers(self._api_key),
-            raise_for_status=True,
+            api_device_status, headers=_headers(self._api_key), raise_for_status=True,
         ) as resp:
             data = await resp.json()
 
         _LOGGER.debug(data)
 
-        #device_state = data['main']['switch']['value']
-        device_volume = data['main']['volume']['value']
+        # device_state = data['main']['switch']['value']
+        device_volume = data["main"]["volume"]["value"]
         device_volume = int(device_volume) / 100
-        device_muted = data['main']['mute']['value'] 
-        device_all_sources = json.loads(data['main']['supportedInputSources']['value'])
-        device_source = data['main']['inputSource']['value']
-        device_tv_chan = data['main']['tvChannel']['value']
-        device_tv_chan_name = data['main']['tvChannelName']['value']
+        device_muted = data["main"]["mute"]["value"]
+        device_all_sources = json.loads(data["main"]["supportedInputSources"]["value"])
+        device_source = data["main"]["inputSource"]["value"]
+        device_tv_chan = data["main"]["tvChannel"]["value"]
+        device_tv_chan_name = data["main"]["tvChannelName"]["value"]
 
         self._volume = device_volume
         self._source_list = device_all_sources
@@ -256,8 +293,12 @@ class SmartThingsTV:
             self._muted = True
         else:
             self._muted = False
-            
-        if self._prev_source != device_source or self._prev_channel != device_tv_chan or self._prev_channel_name != device_tv_chan_name:
+
+        if (
+            self._prev_source != device_source
+            or self._prev_channel != device_tv_chan
+            or self._prev_channel_name != device_tv_chan_name
+        ):
             self._source = device_source
             self._prev_source = device_source
             # if the status is not refreshed this info may become not reliable
@@ -267,7 +308,7 @@ class SmartThingsTV:
                 self._channel_name = device_tv_chan_name
                 self._prev_channel_name = device_tv_chan_name
 
-    async def async_send_command(self, cmdtype, command = ""):
+    async def async_send_command(self, cmdtype, command=""):
         """Send a command too the device"""
 
         device_id = self._device_id
@@ -278,46 +319,45 @@ class SmartThingsTV:
         api_command = f"{api_device}/commands"
         datacmd = None
 
-        if cmdtype == "turn_off": # turns off
-           datacmd = COMMAND_POWER_OFF
-        elif cmdtype == "turn_on": # turns on
-           datacmd = COMMAND_POWER_ON
-        elif cmdtype == "setvolume": # sets volume
-           cmdargs = ARGS_SET_VOLUME.format(command)
-           datacmd = COMMAND_SET_VOLUME + cmdargs
-        elif cmdtype == "stepvolume": # steps volume up or down
-           if command == "up":
-              datacmd = COMMAND_VOLUME_UP
-           elif command == "down":
-              datacmd = COMMAND_VOLUME_DOWN
-        elif cmdtype == "audiomute": # mutes audio
-           if command == "on":
-              datacmd = COMMAND_MUTE
-           elif command == "off":
-              datacmd = COMMAND_UNMUTE
-        elif cmdtype == "selectchannel": #changes channel
-           cmdargs = ARGS_SET_CHANNEL.format(command)
-           datacmd = COMMAND_SET_CHANNEL + cmdargs
-        elif cmdtype == "stepchannel": # steps channel up or down
-           if command == "up":
-              datacmd = COMMAND_CHANNEL_UP
-           elif command == "down":
-              datacmd = COMMAND_CHANNEL_DOWN
-        elif cmdtype == "selectsource": #changes source
-           cmdargs = ARGS_SET_SOURCE.format(command)
-           datacmd = COMMAND_SET_SOURCE + cmdargs
-           # set property to reflect new changes
-           self._source = command
-           self._channel = ""
-           self._channel_name = ""
-            
-        if datacmd:
-           await self._session.post(
-               api_command,
-               headers=_headers(self._api_key),
-               data=datacmd,
-               raise_for_status=True,
-           )
-           
-           await self._device_refresh()
+        if cmdtype == "turn_off":  # turns off
+            datacmd = COMMAND_POWER_OFF
+        elif cmdtype == "turn_on":  # turns on
+            datacmd = COMMAND_POWER_ON
+        elif cmdtype == "setvolume":  # sets volume
+            cmdargs = ARGS_SET_VOLUME.format(command)
+            datacmd = COMMAND_SET_VOLUME + cmdargs
+        elif cmdtype == "stepvolume":  # steps volume up or down
+            if command == "up":
+                datacmd = COMMAND_VOLUME_UP
+            elif command == "down":
+                datacmd = COMMAND_VOLUME_DOWN
+        elif cmdtype == "audiomute":  # mutes audio
+            if command == "on":
+                datacmd = COMMAND_MUTE
+            elif command == "off":
+                datacmd = COMMAND_UNMUTE
+        elif cmdtype == "selectchannel":  # changes channel
+            cmdargs = ARGS_SET_CHANNEL.format(command)
+            datacmd = COMMAND_SET_CHANNEL + cmdargs
+        elif cmdtype == "stepchannel":  # steps channel up or down
+            if command == "up":
+                datacmd = COMMAND_CHANNEL_UP
+            elif command == "down":
+                datacmd = COMMAND_CHANNEL_DOWN
+        elif cmdtype == "selectsource":  # changes source
+            cmdargs = ARGS_SET_SOURCE.format(command)
+            datacmd = COMMAND_SET_SOURCE + cmdargs
+            # set property to reflect new changes
+            self._source = command
+            self._channel = ""
+            self._channel_name = ""
 
+        if datacmd:
+            await self._session.post(
+                api_command,
+                headers=_headers(self._api_key),
+                data=datacmd,
+                raise_for_status=True,
+            )
+
+            await self._device_refresh()
