@@ -534,9 +534,9 @@ class SamsungTVDevice(MediaPlayerDevice):
             elif source_key == "ST_CHDOWN":
                 await self._st.async_send_command("stepchannel", "down")
             elif source_key.startswith("ST_CH"):
-                await self._st.async_send_command(
-                    "selectchannel", source_key.replace("ST_CH", "")
-                )
+                ch_num = source_key.replace("ST_CH", "")
+                if ch_num.isdigit():
+                    await self._st.async_send_command("selectchannel", ch_num)
             elif source_key == "ST_MUTE":
                 await self._st.async_send_command(
                     "audiomute", "off" if self._muted else "on"
@@ -546,9 +546,9 @@ class SamsungTVDevice(MediaPlayerDevice):
             elif source_key == "ST_VOLDOWN":
                 await self._st.async_send_command("stepvolume", "down")
             elif source_key.startswith("ST_VOL"):
-                await self._st.async_send_command(
-                    "setvolume", source_key.replace("ST_VOL", "")
-                )
+                vol_lev = source_key.replace("ST_VOL", "")
+                if vol_lev.isdigit():
+                    await self._st.async_send_command("setvolume", vol_lev)
 
     @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     async def async_update(self, **kwargs):
