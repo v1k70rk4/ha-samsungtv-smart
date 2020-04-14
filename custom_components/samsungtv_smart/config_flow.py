@@ -1,7 +1,7 @@
 """Config flow for Samsung TV."""
 import socket
-from urllib.parse import urlparse
-from typing import Any, Dict, List, Optional
+# from urllib.parse import urlparse
+from typing import Any, Dict
 import logging
 
 import voluptuous as vol
@@ -10,12 +10,13 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.config_entries import SOURCE_IMPORT
 
-from homeassistant.components.ssdp import (
-    ATTR_SSDP_LOCATION,
-    ATTR_UPNP_MANUFACTURER,
-    ATTR_UPNP_MODEL_NAME,
-    ATTR_UPNP_UDN,
-)
+# from homeassistant.components.ssdp import (
+#     ATTR_SSDP_LOCATION,
+#     ATTR_UPNP_MANUFACTURER,
+#     ATTR_UPNP_MODEL_NAME,
+#     ATTR_UPNP_UDN,
+# )
+
 from homeassistant.const import (
     CONF_API_KEY,
     CONF_DEVICE_ID,
@@ -30,7 +31,6 @@ from homeassistant.const import (
 from . import SamsungTVInfo
 from .const import (
     DOMAIN,
-    DEFAULT_NAME,
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
     CONF_UPDATE_METHOD,
@@ -53,8 +53,15 @@ CONFIG_RESULTS = {
 }
 
 CONF_ST_DEVICE = "st_devices"
-DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str, vol.Required(CONF_NAME): str, vol.Optional(CONF_API_KEY): str})
+DATA_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_HOST): str,
+        vol.Required(CONF_NAME): str,
+        vol.Optional(CONF_API_KEY): str,
+    }
+)
 _LOGGER = logging.getLogger(__name__)
+
 
 def _get_ip(host):
     if host is None:
@@ -88,11 +95,13 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_HOST: self._host,
             CONF_NAME: self._tvinfo._name,
             CONF_ID: self._tvinfo._uuid,
-            CONF_MAC: self._mac if not self._tvinfo._macaddress else self._tvinfo._macaddress,
+            CONF_MAC: self._mac
+            if not self._tvinfo._macaddress
+            else self._tvinfo._macaddress,
             CONF_DEVICE_NAME: self._tvinfo._device_name,
             CONF_DEVICE_MODEL: self._tvinfo._device_model,
             CONF_PORT: self._tvinfo._port,
-            CONF_UPDATE_METHOD: self._update_method
+            CONF_UPDATE_METHOD: self._update_method,
         }
 
         title = self._tvinfo._name
@@ -120,10 +129,10 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _remove_stdev_used(self, devices_list: Dict[str, Any]) -> Dict[str, Any]:
         """Remove entry already used"""
         res_dev_list = devices_list.copy()
-        
-        for id in devices_list.keys():
-            if self._stdev_already_used(id):
-                res_dev_list.pop(id)
+
+        for dev_id in devices_list.keys():
+            if self._stdev_already_used(dev_id):
+                res_dev_list.pop(dev_id)
         return res_dev_list
 
     def _extract_dev_name(self, device):
@@ -137,15 +146,17 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _prepare_dev_schema(self, devices_list):
         """Prepare the schema for select correct ST device"""
         validate = {}
-        for id, infos in devices_list.items():
+        for dev_id, infos in devices_list.items():
             device_name = self._extract_dev_name(infos)
-            validate[id] = device_name
+            validate[dev_id] = device_name
         return vol.Schema({vol.Required(CONF_ST_DEVICE): vol.In(validate)})
 
     async def _get_st_deviceid(self, st_device_label=""):
         """Try to detect SmartThings device id."""
         session = self.hass.helpers.aiohttp_client.async_get_clientsession()
-        devices_list = await SamsungTVInfo.get_st_devices(self._api_key, session, st_device_label)
+        devices_list = await SamsungTVInfo.get_st_devices(
+            self._api_key, session, st_device_label
+        )
         if devices_list is None:
             return RESULT_WRONG_APIKEY
 
@@ -163,7 +174,9 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._tvinfo = SamsungTVInfo(self.hass, self._host, self._name)
 
         session = self.hass.helpers.aiohttp_client.async_get_clientsession()
-        result = await self._tvinfo.get_device_info(session, self._api_key, self._device_id)
+        result = await self._tvinfo.get_device_info(
+            session, self._api_key, self._device_id
+        )
 
         return result
 
@@ -225,7 +238,9 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a flow to manual input a ST device."""
         device_id = user_input.get(CONF_DEVICE_ID)
         if self._stdev_already_used(device_id):
-            return self._show_form({"base": RESULT_ST_DEVICE_USED}, step_id="stdeviceid")
+            return self._show_form(
+                {"base": RESULT_ST_DEVICE_USED}, step_id="stdeviceid"
+            )
 
         self._device_id = device_id
         return await self._async_save_entry()
@@ -241,11 +256,13 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.error(
                     "Error during setup of host %s using configuration.yaml info. Reason: %s",
                     self._host,
-                    CONFIG_RESULTS[result]
+                    CONFIG_RESULTS[result],
                 )
                 return self.async_abort(reason=result)
             else:
-                step_id = "stdeviceid" if result == RESULT_ST_DEVICE_NOT_FOUND else "user"
+                step_id = (
+                    "stdeviceid" if result == RESULT_ST_DEVICE_NOT_FOUND else "user"
+                )
                 return self._show_form({"base": result}, step_id)
 
         return self._get_entry()
@@ -254,72 +271,70 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _show_form(self, errors=None, step_id="user"):
         """Show the form to the user."""
         data_schema = DATA_SCHEMA
-        if step_id=="stdevice":
+        if step_id == "stdevice":
             data_schema = self._st_devices_schema
-        elif step_id=="stdeviceid":
+        elif step_id == "stdeviceid":
             data_schema = vol.Schema({vol.Required(CONF_DEVICE_ID): str})
 
         return self.async_show_form(
-            step_id=step_id,
-            data_schema=data_schema,
-            errors=errors if errors else {},
+            step_id=step_id, data_schema=data_schema, errors=errors if errors else {},
         )
 
     # async def async_step_ssdp(self, user_input=None):
-        # """Handle a flow initialized by discovery."""
-        # host = urlparse(user_input[ATTR_SSDP_LOCATION]).hostname
-        # ip_address = await self.hass.async_add_executor_job(_get_ip, host)
-    
-        # self._host = host
-        # self._ip = self.context[CONF_IP_ADDRESS] = ip_address
-        # self._manufacturer = user_input.get(ATTR_UPNP_MANUFACTURER)
-        # self._model = user_input.get(ATTR_UPNP_MODEL_NAME)
-        # self._name = f"Samsung {self._model}"
-        # self._id = user_input.get(ATTR_UPNP_UDN)
-        # self._title = self._model
-    
-        # # probably access denied
-        # if self._id is None:
-            # return self.async_abort(reason=RESULT_AUTH_MISSING)
-        # if self._id.startswith("uuid:"):
-            # self._id = self._id[5:]
+    # """Handle a flow initialized by discovery."""
+    # host = urlparse(user_input[ATTR_SSDP_LOCATION]).hostname
+    # ip_address = await self.hass.async_add_executor_job(_get_ip, host)
 
-        # await self.async_set_unique_id(ip_address)
-        # self._abort_if_unique_id_configured(
-            # {
-                # CONF_ID: self._id,
-                # CONF_MANUFACTURER: self._manufacturer,
-                # CONF_MODEL: self._model,
-            # }
-        # )
+    # self._host = host
+    # self._ip = self.context[CONF_IP_ADDRESS] = ip_address
+    # self._manufacturer = user_input.get(ATTR_UPNP_MANUFACTURER)
+    # self._model = user_input.get(ATTR_UPNP_MODEL_NAME)
+    # self._name = f"Samsung {self._model}"
+    # self._id = user_input.get(ATTR_UPNP_UDN)
+    # self._title = self._model
 
-        # self.context["title_placeholders"] = {"model": self._model}
-        # return await self.async_step_confirm()
+    # # probably access denied
+    # if self._id is None:
+    # return self.async_abort(reason=RESULT_AUTH_MISSING)
+    # if self._id.startswith("uuid:"):
+    # self._id = self._id[5:]
+
+    # await self.async_set_unique_id(ip_address)
+    # self._abort_if_unique_id_configured(
+    # {
+    # CONF_ID: self._id,
+    # CONF_MANUFACTURER: self._manufacturer,
+    # CONF_MODEL: self._model,
+    # }
+    # )
+
+    # self.context["title_placeholders"] = {"model": self._model}
+    # return await self.async_step_confirm()
 
     # async def async_step_confirm(self, user_input=None):
-        # """Handle user-confirmation of discovered node."""
-        # if user_input is not None:
-            # result = await self.hass.async_add_executor_job(self._try_connect)
+    # """Handle user-confirmation of discovered node."""
+    # if user_input is not None:
+    # result = await self.hass.async_add_executor_job(self._try_connect)
 
-            # if result != RESULT_SUCCESS:
-                # return self.async_abort(reason=result)
-            # return self._get_entry()
+    # if result != RESULT_SUCCESS:
+    # return self.async_abort(reason=result)
+    # return self._get_entry()
 
-        # return self.async_show_form(
-            # step_id="confirm", description_placeholders={"model": self._model}
-        # )
+    # return self.async_show_form(
+    # step_id="confirm", description_placeholders={"model": self._model}
+    # )
 
     # async def async_step_reauth(self, user_input=None):
-        # """Handle configuration by re-auth."""
-        # self._host = user_input[CONF_HOST]
-        # self._id = user_input.get(CONF_ID)
-        # self._ip = user_input[CONF_IP_ADDRESS]
-        # self._manufacturer = user_input.get(CONF_MANUFACTURER)
-        # self._model = user_input.get(CONF_MODEL)
-        # self._name = user_input.get(CONF_NAME)
-        # self._title = self._model or self._name
+    # """Handle configuration by re-auth."""
+    # self._host = user_input[CONF_HOST]
+    # self._id = user_input.get(CONF_ID)
+    # self._ip = user_input[CONF_IP_ADDRESS]
+    # self._manufacturer = user_input.get(CONF_MANUFACTURER)
+    # self._model = user_input.get(CONF_MODEL)
+    # self._name = user_input.get(CONF_NAME)
+    # self._title = self._model or self._name
 
-        # await self.async_set_unique_id(self._ip)
-        # self.context["title_placeholders"] = {"model": self._title}
+    # await self.async_set_unique_id(self._ip)
+    # self.context["title_placeholders"] = {"model": self._title}
 
-        # return await self.async_step_confirm()
+    # return await self.async_step_confirm()
