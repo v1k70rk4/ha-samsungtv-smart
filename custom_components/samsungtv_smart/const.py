@@ -1,7 +1,6 @@
 """Constants for the samsungtv_smart integration."""
 
 DOMAIN = "samsungtv_smart"
-BASE_URL = "http://{host}:8001/api/v2/"
 
 UPDATE_METHODS = {
     "SmartThings": "smartthings",

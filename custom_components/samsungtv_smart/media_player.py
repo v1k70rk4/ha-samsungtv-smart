@@ -59,9 +59,10 @@ from homeassistant.const import (
     STATE_ON,
 )
 
+from . import tv_url
+
 from .const import (
     DOMAIN,
-    BASE_URL,
     DEFAULT_TIMEOUT,
     DEFAULT_SOURCE_LIST,
     DEFAULT_APP,
@@ -297,13 +298,12 @@ class SamsungTVDevice(MediaPlayerDevice):
             or (self._update_method == "smartthings" and st_state == STATE_ON)
         ):
 
-            try:
-                ping_url = f"{BASE_URL}status".format(
-                    host=self._host
-                )  # use a generic URL with less payload that return status 404
-                if self._update_custom_ping_url is not None:
-                    ping_url = self._update_custom_ping_url
+            # use a generic URL with less payload that return status 404
+            ping_url = tv_url(host=self._host, address="status")
+            if self._update_custom_ping_url is not None:
+                ping_url = self._update_custom_ping_url
 
+            try:
                 with timeout(PING_UPDATE_TIMEOUT):
                     async with self._session.get(
                         ping_url, raise_for_status=False,
@@ -328,9 +328,9 @@ class SamsungTVDevice(MediaPlayerDevice):
         if self._app_list is not None:
 
             if self._st and self._st.channel_name != "":
-                for attr, value in self._app_list_ST.items():
-                    if value == self._st.channel_name:
-                        self._running_app = attr
+                for app, app_id in self._app_list_ST.items():
+                    if app_id == self._st.channel_name:
+                        self._running_app = app
                         return
 
             # this method, due to the fact that is in the local LAN and using aiohttp,
@@ -339,15 +339,15 @@ class SamsungTVDevice(MediaPlayerDevice):
             if self._scan_app_http:
 
                 _LOGGER.debug("Start getting running app...")
-                for app in self._app_list:
+                for app, app_id in self._app_list.items():
 
-                    data = None
-
+                    # data = None
                     try:
                         with timeout(HTTP_APPCHECK_TIMEOUT):
                             async with self._session.get(
-                                f"{BASE_URL}applications/{self._app_list[app]}".format(
-                                    host=self._host
+                                tv_url(
+                                    host=self._host,
+                                    address=f"applications/{app_id}"
                                 ),
                                 raise_for_status=False,
                             ) as resp:

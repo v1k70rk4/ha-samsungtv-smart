@@ -31,7 +31,6 @@ from homeassistant.const import (
 
 from .const import (
     DOMAIN,
-    BASE_URL,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_TIMEOUT,
@@ -99,6 +98,10 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def tv_url(host: str, address: str = "") -> str:
+    return f"http://{host}:8001/api/v2/{address}"
 
 
 class SamsungTVInfo:
@@ -221,7 +224,8 @@ class SamsungTVInfo:
         try:
             with timeout(2):
                 async with session.get(
-                    BASE_URL.format(host=self._hostname), raise_for_status=True
+                    tv_url(host=self._hostname),
+                    raise_for_status=True
                 ) as resp:
                     info = await resp.json()
         except (asyncio.TimeoutError, ClientConnectionError):
