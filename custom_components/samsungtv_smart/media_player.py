@@ -305,9 +305,10 @@ class SamsungTVDevice(MediaPlayerDevice):
                     ping_url = self._update_custom_ping_url
 
                 with timeout(PING_UPDATE_TIMEOUT):
-                    await self._session.get(
+                    async with self._session.get(
                         ping_url, raise_for_status=False,
-                    )
+                    ) as resp:
+                        await resp.text()
                 self._state = STATE_ON
             except:
                 self._state = STATE_OFF
@@ -366,11 +367,11 @@ class SamsungTVDevice(MediaPlayerDevice):
                             if root["visible"]:
                                 self._running_app = app
                                 _LOGGER.debug(
-                                    "... end getting tunning app - found app: " + app
+                                    "... end getting running app - found app: " + app
                                 )
                                 return
 
-                _LOGGER.debug("... end getting app list - no app found.")
+                _LOGGER.debug("... end getting running app - no app found.")
 
         self._running_app = DEFAULT_APP
 

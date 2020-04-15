@@ -82,6 +82,7 @@ def _headers(api_key: str) -> Dict[str, str]:
     return {
         "Authorization": f"Bearer {api_key}",
         "Accept": "application/json",
+        "Connection": "keep-alive",
     }
 
 
@@ -221,12 +222,13 @@ class SmartThingsTV:
         api_command = f"{api_device}/commands"
 
         if self._refresh_status:
-            await self._session.post(
+            async with self._session.post(
                 api_command,
                 headers=_headers(self._api_key),
                 data=COMMAND_REFRESH,
                 raise_for_status=True,
-            )
+            ) as resp:
+                await resp.json()
 
     async def async_device_health(self):
         """Check device availability"""
@@ -353,11 +355,12 @@ class SmartThingsTV:
             self._channel_name = ""
 
         if datacmd:
-            await self._session.post(
+            async with self._session.post(
                 api_command,
                 headers=_headers(self._api_key),
                 data=datacmd,
                 raise_for_status=True,
-            )
+            ) as resp:
+                await resp.json()
 
             await self._device_refresh()
