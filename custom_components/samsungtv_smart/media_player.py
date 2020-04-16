@@ -171,21 +171,29 @@ class SamsungTVDevice(MediaPlayerDevice):
         port = config.get(CONF_PORT)
         api_key = config.get(CONF_API_KEY, None)
         device_id = config.get(CONF_DEVICE_ID, None)
-        source_list = config.get(CONF_SOURCE_LIST, DEFAULT_SOURCE_LIST)
-        app_list = config.get(CONF_APP_LIST)
 
-        self._source = None
-        self._default_source_used = source_list == DEFAULT_SOURCE_LIST
-        self._source_list = json.loads(source_list)
-        self._running_app = None
-        if app_list is not None:
-            dlist = SamsungTVDevice._split_app_list(json.loads(app_list), "/")
-            self._app_list = dlist["app"]
-            self._app_list_ST = dlist["appST"]
+        self._default_source_used = False
+        source_list = SamsungTVDevice._load_param_list(
+            config.get(CONF_SOURCE_LIST, {})
+        )
+        if not source_list:
+            source_list = DEFAULT_SOURCE_LIST
+            self._default_source_used = True
+        self._source_list = source_list
+
+        app_list = SamsungTVDevice._load_param_list(
+            config.get(CONF_APP_LIST, {})
+        )
+        if app_list:
+            double_list = SamsungTVDevice._split_app_list(app_list, "/")
+            self._app_list = double_list["app"]
+            self._app_list_ST = double_list["appST"]
         else:
             self._app_list = None
             self._app_list_ST = None
 
+        self._source = None
+        self._running_app = None
         self._is_ws_connection = True if port in (8001, 8002) else False
         # Assume that the TV is not muted and volume is 0
         self._muted = False
@@ -228,6 +236,19 @@ class SamsungTVDevice(MediaPlayerDevice):
             )
 
         self._setvolumebyst = False
+
+    @staticmethod
+    def _load_param_list(src_list):
+        result = {}
+        if isinstance(src_list, dict):
+            return src_list
+
+        try:
+            result = json.loads(src_list)
+        except TypeError:
+            _LOGGER.error("Invalid format parameter: %s", str(src_list))
+
+        return result
 
     @staticmethod
     def _split_app_list(app_list, sep=ST_APP_SEPARATOR):

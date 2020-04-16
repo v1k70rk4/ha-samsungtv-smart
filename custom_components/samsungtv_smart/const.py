@@ -32,7 +32,7 @@ CONF_DEVICE_OS = "device_os"
 
 WS_PREFIX = "[Home Assistant]"
 
-DEFAULT_SOURCE_LIST = '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'
+DEFAULT_SOURCE_LIST = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
 DEFAULT_APP = "TV/HDMI"
 
 STD_APP_LIST = {
