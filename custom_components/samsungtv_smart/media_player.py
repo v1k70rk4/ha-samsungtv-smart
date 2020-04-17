@@ -803,7 +803,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             await asyncio.sleep(POWER_ON_DELAY)
             await self._async_ping_device(force_ping=True, no_throttle=True)
 
-    def turn_off(self):
+    async def async_turn_off(self):
         """Turn off media player."""
         if (not self._power_off_in_progress()) and self._state != STATE_OFF:
 
@@ -812,15 +812,15 @@ class SamsungTVDevice(MediaPlayerDevice):
             )
 
             if self._is_ws_connection:
-                self.send_command("KEY_POWER")
+                await self.async_send_command("KEY_POWER")
             else:
-                self.send_command("KEY_POWEROFF")
+                await self.async_send_command("KEY_POWEROFF")
 
             # Force closing of remote session to provide instant UI feedback
-            try:
-                self._ws.close()
-            except OSError:
-                _LOGGER.debug("Could not establish connection.")
+            # try:
+            #     self._ws.close()
+            # except OSError:
+            #     _LOGGER.debug("Could not establish connection.")
 
     @property
     def volume_level(self):
