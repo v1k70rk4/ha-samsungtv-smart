@@ -17,7 +17,7 @@ from .api.smartthings import SmartThingsTV
 from .api.upnp import upnp
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant import util
+from homeassistant.util import Throttle
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 
@@ -87,7 +87,7 @@ MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
 POWER_OFF_DELAY = 20
 POWER_ON_DELAY = 3
-PING_UPDATE_TIMEOUT = 1
+PING_UPDATE_TIMEOUT = 1.5
 ST_APP_SEPARATOR = "/"
 ST_UPDATE_TIMEOUT = 5
 WS_CONN_TIMEOUT = 10
@@ -305,7 +305,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._volume = int(await self._upnp.async_get_volume()) / 100
             self._muted = await self._upnp.async_get_mute()
 
-    @util.Throttle(MIN_TIME_BETWEEN_PING)
+    @Throttle(MIN_TIME_BETWEEN_PING)
     async def _async_ping_device(self, force_ping=False, **kwargs):
 
         st_state = STATE_OFF
@@ -438,7 +438,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._source_list = st_source_list
             self._default_source_used = False
 
-    @util.Throttle(MIN_TIME_BETWEEN_APP_SCANS)
+    @Throttle(MIN_TIME_BETWEEN_APP_SCANS)
     def _gen_installed_app_list(self, **kwargs):
         if self._state == STATE_OFF:
             _LOGGER.debug("Samsung TV is OFF, _gen_installed_app_list not executed")
@@ -572,7 +572,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 if vol_lev.isdigit():
                     await self._st.async_send_command("setvolume", vol_lev)
 
-    @util.Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
+    @Throttle(MIN_TIME_BETWEEN_SCANS, MIN_TIME_BETWEEN_FORCED_SCANS)
     async def async_update(self, **kwargs):
         """Update state of device."""
 
@@ -679,7 +679,6 @@ class SamsungTVDevice(MediaPlayerDevice):
         if self._st:
 
             if self._st.state == STATE_OFF:
-                self._state = STATE_OFF
                 return None
             elif self._running_app == DEFAULT_APP:
                 if self._st.source in ["digitalTv", "TV"]:
