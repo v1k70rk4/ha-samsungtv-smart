@@ -83,6 +83,7 @@ HTTP_APPCHECK_TIMEOUT = 1
 KEYPRESS_DEFAULT_DELAY = 0.5
 KEYPRESS_MAX_DELAY = 2.0
 KEYPRESS_MIN_DELAY = 0.2
+MAX_ST_ERROR_COUNT = 4
 MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
 POWER_OFF_DELAY = 20
@@ -235,6 +236,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                 session=session,
             )
 
+        self._st_error_count = 0
         self._setvolumebyst = False
 
     @staticmethod
@@ -581,13 +583,18 @@ class SamsungTVDevice(MediaPlayerDevice):
             try:
                 with timeout(ST_UPDATE_TIMEOUT):
                     await self._st.async_device_update()
+                self._st_error_count = 0
             except (
                 asyncio.TimeoutError,
                 ClientConnectionError,
                 ClientResponseError,
             ) as ex:
-                _LOGGER.error("SamsungTV Smart - Error refreshing from SmartThings")
+                self._st_error_count += 1
                 _LOGGER.debug("SamsungTV Smart - Error: [%s]", ex)
+
+        if self._st_error_count >= MAX_ST_ERROR_COUNT:
+            _LOGGER.error("SamsungTV Smart - Error refreshing from SmartThings")
+            self._st_error_count = 0
 
         await self._async_ping_device()
 
