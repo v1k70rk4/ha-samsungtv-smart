@@ -35,13 +35,14 @@ from .const import (
     DEFAULT_PORT,
     DEFAULT_TIMEOUT,
     DEFAULT_UPDATE_METHOD,
+    CONF_APP_LIST,
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
+    CONF_LOAD_ALL_APPS,
+    CONF_SOURCE_LIST,
+    CONF_SHOW_CHANNEL_NR,
     CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
-    CONF_SOURCE_LIST,
-    CONF_APP_LIST,
-    CONF_SHOW_CHANNEL_NR,
     CONF_SCAN_APP_HTTP,
     DEFAULT_SOURCE_LIST,
     UPDATE_METHODS,
@@ -59,9 +60,10 @@ SAMSMART_SCHEMA = {
     vol.Optional(CONF_APP_LIST): cv.string,
     vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
     vol.Optional(CONF_UPDATE_METHOD): vol.In(UPDATE_METHODS.values()),
-    vol.Optional(CONF_UPDATE_CUSTOM_PING_URL): cv.string,
     vol.Optional(CONF_SHOW_CHANNEL_NR, default=False): cv.boolean,
     vol.Optional(CONF_BROADCAST_ADDRESS): cv.string,
+    vol.Optional(CONF_LOAD_ALL_APPS, default=True): cv.boolean,
+    vol.Optional(CONF_UPDATE_CUSTOM_PING_URL): cv.string,
     vol.Optional(CONF_SCAN_APP_HTTP, default=True): cv.boolean,
 }
 
@@ -80,6 +82,8 @@ CONFIG_SCHEMA = vol.Schema(
             cv.ensure_list,
             [
                 cv.deprecated(CONF_PORT),
+                cv.deprecated(CONF_UPDATE_CUSTOM_PING_URL),
+                cv.deprecated(CONF_SCAN_APP_HTTP),
                 vol.Schema(
                     {
                         vol.Required(CONF_HOST): cv.string,
@@ -171,7 +175,7 @@ class SamsungTVInfo:
         """Try to connect to ST device"""
 
         try:
-            with timeout(4):
+            with timeout(10):
                 _LOGGER.debug(
                     "Try connection to SmartThings TV with id [%s]", device_id
                 )

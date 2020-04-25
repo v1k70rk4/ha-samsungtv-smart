@@ -23,12 +23,15 @@ DEFAULT_UPDATE_METHOD = UPDATE_METHODS["Ping"]
 CONF_DEVICE_NAME = "device_name"
 CONF_DEVICE_MODEL = "device_model"
 CONF_UPDATE_METHOD = "update_method"
-CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
 CONF_SOURCE_LIST = "source_list"
 CONF_APP_LIST = "app_list"
 CONF_SHOW_CHANNEL_NR = "show_channel_number"
-CONF_SCAN_APP_HTTP = "scan_app_http"
 CONF_DEVICE_OS = "device_os"
+CONF_LOAD_ALL_APPS = "load_all_apps"
+
+# obsolete
+CONF_UPDATE_CUSTOM_PING_URL = "update_custom_ping_url"
+CONF_SCAN_APP_HTTP = "scan_app_http"
 
 WS_PREFIX = "[Home Assistant]"
 

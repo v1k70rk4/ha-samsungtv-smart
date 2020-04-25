@@ -59,22 +59,21 @@ from homeassistant.const import (
     STATE_ON,
 )
 
-from . import tv_url
-
 from .const import (
     DOMAIN,
     DEFAULT_TIMEOUT,
     DEFAULT_SOURCE_LIST,
     DEFAULT_APP,
+    CONF_APP_LIST,
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
+    CONF_DEVICE_OS,
+    CONF_LOAD_ALL_APPS,
+    CONF_SHOW_CHANNEL_NR,
+    CONF_SOURCE_LIST,
     CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
-    CONF_SOURCE_LIST,
-    CONF_APP_LIST,
-    CONF_SHOW_CHANNEL_NR,
     CONF_SCAN_APP_HTTP,
-    CONF_DEVICE_OS,
     STD_APP_LIST,
     WS_PREFIX,
 )
@@ -163,10 +162,13 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._device_model = config.get(CONF_DEVICE_MODEL)
         self._device_os = config.get(CONF_DEVICE_OS)
         self._show_channel_number = config.get(CONF_SHOW_CHANNEL_NR, False)
-        self._timeout = config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
         self._update_method = config.get(CONF_UPDATE_METHOD)
-        self._update_custom_ping_url = config.get(CONF_UPDATE_CUSTOM_PING_URL)
         self._broadcast = config.get(CONF_BROADCAST_ADDRESS)
+        self._load_all_apps = config.get(CONF_LOAD_ALL_APPS, True)
+        self._timeout = config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+
+        # obsolete
+        self._update_custom_ping_url = config.get(CONF_UPDATE_CUSTOM_PING_URL)
         self._scan_app_http = config.get(CONF_SCAN_APP_HTTP, True)
 
         port = config.get(CONF_PORT)
@@ -290,6 +292,21 @@ class SamsungTVDevice(MediaPlayerDevice):
                     "Samsung TV - Error creating token file: %s", self._token_file
                 )
 
+    def _delete_token_file(self):
+
+        if not self._token_file:
+            return
+
+        if os.path.isfile(self._token_file) is True:
+
+            # delete token file for catch possible errors
+            try:
+                os.remove(self._token_file)
+            except:
+                _LOGGER.error(
+                    "Samsung TV - Error deleting token file: %s", self._token_file
+                )
+
     def _power_off_in_progress(self):
         return (
             self._end_of_power_off is not None
@@ -320,21 +337,8 @@ class SamsungTVDevice(MediaPlayerDevice):
             or force_ping
             or (self._update_method == "smartthings" and st_state == STATE_ON)
         ):
-
-            # use a generic URL with less payload that return status 404
-            ping_url = tv_url(host=self._host, address="status")
-            if self._update_custom_ping_url is not None:
-                ping_url = self._update_custom_ping_url
-
-            try:
-                with timeout(PING_UPDATE_TIMEOUT):
-                    async with self._session.get(
-                        ping_url, raise_for_status=False,
-                    ) as resp:
-                        await resp.text()
-                self._state = STATE_ON
-            except:
-                self._state = STATE_OFF
+            result = await self.hass.async_add_job(self._ws.ping_device)
+            self._state = STATE_ON if result else STATE_OFF
 
         # SmartThings ping
         elif self._st and self._update_method == "smartthings":
@@ -344,57 +348,29 @@ class SamsungTVDevice(MediaPlayerDevice):
         else:
             await self.async_send_command("KEY", "send_key", 1, 0)
 
+        if self._is_ws_connection:
+            if self._state == STATE_ON:
+                await self.hass.async_add_job(self._ws.start_client)
+                await self.hass.async_add_job(self._ws.get_running_app)
+            else:
+                await self.hass.async_add_job(self._ws.stop_client)
+
         await self._update_volume_info()
 
     async def _get_running_app(self):
 
         if self._app_list is not None:
 
-            if self._st and self._st.channel_name != "":
-                for app, app_id in self._app_list_ST.items():
-                    if app_id == self._st.channel_name:
+            for app, app_id in self._app_list.items():
+                if self._ws.running_app:
+                    if app_id == self._ws.running_app:
                         self._running_app = app
                         return
-
-            # this method, due to the fact that is in the local LAN and using aiohttp,
-            # is very very fast (less than 1 sec) and more immediate in result.
-            # The only issue is that in some case (eg. Prime Video) do not work
-            if self._scan_app_http:
-
-                _LOGGER.debug("Start getting running app...")
-                for app, app_id in self._app_list.items():
-
-                    # data = None
-                    try:
-                        with timeout(HTTP_APPCHECK_TIMEOUT):
-                            async with self._session.get(
-                                tv_url(
-                                    host=self._host,
-                                    address=f"applications/{app_id}"
-                                ),
-                                raise_for_status=False,
-                            ) as resp:
-                                data = await resp.text()
-                    except (asyncio.TimeoutError, ClientConnectionError) as ex:
-                        _LOGGER.debug(
-                            "Error getting HTTP info for app: %s - error: %s", app, ex
-                        )
-                        """ if we have exceptions here is because TV is not reachable, 
-                            there are no reason to continue the loop
-                            """
-                        break
-
-                    if data is not None:
-                        root = json.loads(data.encode("UTF-8"))
-                        if "visible" in root:
-                            if root["visible"]:
-                                self._running_app = app
-                                _LOGGER.debug(
-                                    "... end getting running app - found app: " + app
-                                )
-                                return
-
-                _LOGGER.debug("... end getting running app - no app found.")
+                if self._st and self._st.channel_name != "":
+                    st_app_id = self._app_list_ST.get(app, "")
+                    if st_app_id == self._st.channel_name:
+                        self._running_app = app
+                        return
 
         self._running_app = DEFAULT_APP
 
@@ -446,21 +422,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             _LOGGER.debug("Samsung TV is OFF, _gen_installed_app_list not executed")
             return
 
-        _LOGGER.warning(
-            "Retrieving applications list from TV. It is suggested to define a manual app_list (see component documentation)!!!"
-        )
-
-        # temporary increase timeout
-        app_list = None
-        self._ws.timeout = 10
-        try:
-            app_list = self._ws.app_list()
-        except Exception:
-            _LOGGER.error(
-                "Error retrieving application list from TV. Method will be retried."
-            )
-        self._ws.timeout = self._timeout
-
+        app_list = self._ws.installed_app
         if not app_list:
             return
 
@@ -468,17 +430,16 @@ class SamsungTVDevice(MediaPlayerDevice):
         clean_app_list = {}
         clean_app_list_ST = {}
         dump_app_list = {}
-        for i in range(len(app_list)):
+        for app in app_list.values():
             try:
-                app = app_list[i]
-                app_name = app.get("name")
-                app_id = app.get("appId")
+                app_name = app.app_name
+                app_id = app.app_id
                 full_app_id = app_id
                 st_app_id = STD_APP_LIST.get(app_id, "###")
                 # app_list is automatically created only with apps in hard coded short list (STD_APP_LIST)
                 # other available apps are dumped in a file that can be used to create a custom list
                 # this is to avoid unuseful long list that can impact performance
-                if st_app_id != "###":
+                if st_app_id != "###" or self._load_all_apps:
                     clean_app_list[app_name] = app_id
                     clean_app_list_ST[app_name] = (
                         st_app_id if st_app_id != "" else app_id
@@ -505,7 +466,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             )
             with open(dump_file_name, "w") as dump_file:
                 dump_file.write('app_list: "' + str(dump_app_list) + '"')
-        except Exception:
+        except OSError:
             _LOGGER.error("Failed to write dump apps file")
             pass
 
@@ -637,10 +598,8 @@ class SamsungTVDevice(MediaPlayerDevice):
                         "Error in send_command() -> ConnectionResetError/AttributeError/BrokenPipeError"
                     )
 
-            self._state = STATE_ON
         except WebSocketTimeoutException:
             # We got a response so it's on.
-            self._state = STATE_ON
             self._ws.close()
             _LOGGER.debug(
                 "Failed sending payload %s command_type %s",
@@ -650,7 +609,6 @@ class SamsungTVDevice(MediaPlayerDevice):
             )
 
         except OSError:
-            self._state = STATE_OFF
             self._ws.close()
             _LOGGER.debug("Error in send_command() -> OSError")
 
@@ -759,7 +717,9 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._get_st_sources()
 
         if self._app_list is None:
-            self._gen_installed_app_list()
+            if self._is_ws_connection:
+                if self._ws.installed_app:
+                    self._gen_installed_app_list()
 
         if self._power_off_in_progress() or self._state == STATE_OFF:
             return None
@@ -1034,3 +994,8 @@ class SamsungTVDevice(MediaPlayerDevice):
             _device_info["sw_version"] = self._device_os
 
         return _device_info
+
+    async def async_will_remove_from_hass(self):
+        if self._is_ws_connection:
+            await self.hass.async_add_job(self._ws.stop_client)
+            await self.hass.async_add_job(self._delete_token_file)
