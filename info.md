@@ -76,7 +76,7 @@ You can configure additional option for the component using configuration variab
 Some of this option are available only during component configuration because are stored in the registry during setup 
 phase, other can be changed in `configuration.yaml` at any moment.<br/>
 
-**Please refer to [readme](https://github.com/ollo69/ha-samsungtv-smart/blob/README.md) for details on optional parameter and additional configuration instruction.**
+**Please refer to [readme](https://github.com/ollo69/ha-samsungtv-smart/blob/master/README.md) for details on optional parameter and additional configuration instruction.**
 
 # Be nice!
 If you like the component, why don't you support me by buying me a coffe?
