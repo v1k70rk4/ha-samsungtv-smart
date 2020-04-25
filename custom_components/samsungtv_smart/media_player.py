@@ -446,7 +446,7 @@ class SamsungTVDevice(MediaPlayerDevice):
                     )
                     full_app_id = (
                         app_id + ST_APP_SEPARATOR + st_app_id
-                        if st_app_id != ""
+                        if st_app_id != "" and st_app_id != "###"
                         else app_id
                     )
 

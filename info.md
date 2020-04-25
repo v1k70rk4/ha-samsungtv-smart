@@ -16,9 +16,9 @@ Starting from version 0.2.x the websocket protocol has been completely rewritten
 TV always open (as it should be). In addition, all REST-type messages, that create problems in communications and 
 management of the access token, have been eliminated.<br/>
 The new protocol should make communication with the TV much more efficient, however, being this the first version, I ask 
-everyone to open any issues with the greatest number of details so that I can identify and resolve any anomalies in 
-the best way. For those who cannot use the new version, they can eventually install the latest version 0.1.x waiting 
-new fixes.
+everyone to open any [issues](https://github.com/ollo69/ha-samsungtv-smart/issues) with the greatest number of details 
+so that I can identify and resolve any anomalies in the best way. For those who cannot use the new version, they can 
+eventually install the latest version 0.1.x waiting new fixes.
 
 # Additional Features:
 
@@ -76,8 +76,7 @@ You can configure additional option for the component using configuration variab
 Some of this option are available only during component configuration because are stored in the registry during setup 
 phase, other can be changed in `configuration.yaml` at any moment.<br/>
 
-**Please refer to [readme](https://github.com/ollo69/ha-samsungtv-smart/blob/readme.md) for details on optional
-parameter and additional configuration instruction.**
+**Please refer to [readme](https://github.com/ollo69/ha-samsungtv-smart/blob/README.md) for details on optional parameter and additional configuration instruction.**
 
 # Be nice!
 If you like the component, why don't you support me by buying me a coffe?

@@ -44,7 +44,8 @@ STD_APP_LIST = {
     "11101200001": "org.tizen.netflix-app",     #Netflix
     "111299001912": "9Ur5IzDKqV.TizenYouTube",  #YouTube
     "3201512006785": "org.tizen.ignition",      #Prime Video
-    "11091000000": "4ovn894vo9.Facebook",       #Facebook 
+    "3201901017640": "MCmYXNxgcu.DisneyPlus",   #Disney+
+    "11091000000": "4ovn894vo9.Facebook",       #Facebook
     "3201601007250": "QizQxC7CUf.PlayMovies",   #Google Play
     "3201606009684": "rJeHak5zRg.Spotify",      #Spotify
 }
