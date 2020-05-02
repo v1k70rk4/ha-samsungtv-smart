@@ -23,6 +23,7 @@ Copyright (C) 2020 Ollo69
 import base64
 import json
 import logging
+import re
 import requests
 import ssl
 import subprocess
@@ -35,7 +36,18 @@ from yarl import URL
 from . import exceptions
 from . import shortcuts
 
+PING_MATCHER = re.compile(
+    r"(?P<min>\d+.\d+)\/(?P<avg>\d+.\d+)\/(?P<max>\d+.\d+)\/(?P<mdev>\d+.\d+)"
+)
+
+PING_MATCHER_BUSYBOX = re.compile(
+    r"(?P<min>\d+.\d+)\/(?P<avg>\d+.\d+)\/(?P<max>\d+.\d+)"
+)
+
+WIN32_PING_MATCHER = re.compile(r"(?P<min>\d+)ms.+(?P<max>\d+)ms.+(?P<avg>\d+)ms")
+
 MIN_APP_SCAN_INTERVAL = 10
+MAX_WS_PING_INTERVAL = 10
 _LOGGING = logging.getLogger(__name__)
 
 
@@ -83,6 +95,15 @@ class Ping:
         try:
             out = pinger.communicate()
             _LOGGING.debug("Output is %s", str(out))
+            if sys.platform == "win32":
+                match = WIN32_PING_MATCHER.search(str(out).split("\n")[-1])
+                rtt_min, rtt_avg, rtt_max = match.groups()
+            elif "max/" not in str(out):
+                match = PING_MATCHER_BUSYBOX.search(str(out).split("\n")[-1])
+                rtt_min, rtt_avg, rtt_max = match.groups()
+            else:
+                match = PING_MATCHER.search(str(out).split("\n")[-1])
+                rtt_min, rtt_avg, rtt_max, rtt_mdev = match.groups()
             return True
         except (subprocess.CalledProcessError, AttributeError):
             return False
@@ -120,6 +141,7 @@ class SamsungTVWS:
         self._running_app = None
         self._sync_lock = Lock()
         self._last_app_scan = datetime.min
+        self._last_ping = datetime.min
         self._is_connected = False
 
         self._ws_remote = None
@@ -249,9 +271,14 @@ class SamsungTVWS:
         self._ws_remote = websocket.WebSocketApp(
             url,
             on_message=self._on_message_remote,
+            on_ping=self._on_ping_remote,
         )
         _LOGGING.debug("Thread SamsungRemote started")
-        self._ws_remote.run_forever(sslopt=sslopt)
+        # we set ping interval (1 hour) only to enable multi-threading mode
+        # on socket. TV do not answer to ping but send ping to client
+        self._ws_remote.run_forever(
+            sslopt=sslopt, ping_interval=3600, ping_timeout=2
+        )
         self._is_connected = False
         if self._ws_control:
             self._ws_control.close()
@@ -259,12 +286,25 @@ class SamsungTVWS:
         self._ws_remote = None
         _LOGGING.debug("Thread SamsungRemote terminated")
 
+    def _on_ping_remote(self, payload):
+        _LOGGING.debug("Received ping %s, sending pong", payload)
+        self._last_ping = datetime.now()
+        if self._ws_remote.sock:
+            try:
+                self._ws_remote.sock.pong(payload)
+            except Exception as ex:
+                _LOGGING.warning("send_pong failed: {}".format(ex))
+
     def _on_message_remote(self, message):
         response = self._process_api_response(message)
         _LOGGING.debug(response)
         event = response.get("event")
         if not event:
             return
+
+        # we consider a message valid as a ping
+        self._last_ping = datetime.now()
+
         if event == "ms.channel.connect":
             _LOGGING.debug("Message remote: received connect")
             if response.get("data") and response.get("data").get("token"):
@@ -392,6 +432,12 @@ class SamsungTVWS:
 
     def ping_device(self):
         result = self._ping.ping()
+        # check ws ping/pong
+        if result and self._ws_remote:
+            call_time = datetime.now()
+            difference = (call_time - self._last_ping).total_seconds()
+            result = difference < MAX_WS_PING_INTERVAL
+
         if not result:
             self.stop_client()
         return result
@@ -408,7 +454,7 @@ class SamsungTVWS:
                 return
             self._last_app_scan = call_time
 
-        if self._app_list:
+        if self._app_list is not None:
             app_to_check = {}
             for app_id in self._app_list.values():
                 app = self._installed_app.get(app_id)
@@ -424,11 +470,13 @@ class SamsungTVWS:
         if self._client_remote is None or not self._client_remote.is_alive():
             self._client_remote = Thread(target=self._client_remote_thread)
             self._client_remote.name = "SamsungRemote"
+            self._client_remote.setDaemon(True)
             self._client_remote.start()
         if start_all:
             if self._client_control is None or not self._client_control.is_alive():
                 self._client_control = Thread(target=self._client_control_thread)
                 self._client_control.name = "SamsungControl"
+                self._client_control.setDaemon(True)
                 self._client_control.start()
 
     def stop_client(self):

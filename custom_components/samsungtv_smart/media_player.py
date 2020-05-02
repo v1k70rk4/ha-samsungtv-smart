@@ -185,9 +185,9 @@ class SamsungTVDevice(MediaPlayerDevice):
         self._source_list = source_list
 
         app_list = SamsungTVDevice._load_param_list(
-            config.get(CONF_APP_LIST, {})
+            config.get(CONF_APP_LIST)
         )
-        if app_list:
+        if app_list is not None:
             double_list = SamsungTVDevice._split_app_list(app_list, "/")
             self._app_list = double_list["app"]
             self._app_list_ST = double_list["appST"]
@@ -327,33 +327,32 @@ class SamsungTVDevice(MediaPlayerDevice):
     @Throttle(MIN_TIME_BETWEEN_PING)
     async def _async_ping_device(self, force_ping=False, **kwargs):
 
-        st_state = STATE_OFF
-        if self._st:
-            st_state = self._st.state
-
         # HTTP ping
-        if self._is_ws_connection and (
-            self._update_method == "ping"
-            or force_ping
-            or (self._update_method == "smartthings" and st_state == STATE_ON)
-        ):
-            result = await self.hass.async_add_job(self._ws.ping_device)
-            self._state = STATE_ON if result else STATE_OFF
-
-        # SmartThings ping
-        elif self._st and self._update_method == "smartthings":
-            self._state = st_state
-
-        # WS ping
-        else:
-            await self.async_send_command("KEY", "send_key", 1, 0)
-
         if self._is_ws_connection:
-            if self._state == STATE_ON:
+
+            result = await self.hass.async_add_job(self._ws.ping_device)
+            if result and self._st:
+                if (
+                    self._st.state == STATE_OFF and self._state == STATE_ON
+                    and self._update_method == "smartthings"
+                ):
+                    result = False
+
+            if result:
                 await self.hass.async_add_job(self._ws.start_client)
                 await self.hass.async_add_job(self._ws.get_running_app)
             else:
                 await self.hass.async_add_job(self._ws.stop_client)
+
+            self._state = STATE_ON if result else STATE_OFF
+
+        # SmartThings ping
+        # elif self._st and self._update_method == "smartthings":
+        #     self._state = st_state
+
+        # WS ping
+        else:
+            await self.async_send_command("KEY", "send_key", 1, 0)
 
         await self._update_volume_info()
 
@@ -638,7 +637,7 @@ class SamsungTVDevice(MediaPlayerDevice):
     @property
     def media_title(self):
         """Title of current playing media."""
-        if self._state == STATE_OFF:  # and self._update_method != "smartthings":
+        if self._state == STATE_OFF:
             return None
 
         if self._st:
