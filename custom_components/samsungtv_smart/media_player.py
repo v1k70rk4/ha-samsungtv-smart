@@ -243,15 +243,17 @@ class SamsungTVDevice(MediaPlayerDevice):
 
     @staticmethod
     def _load_param_list(src_list):
-        result = {}
+
+        if src_list is None:
+            return None
         if isinstance(src_list, dict):
             return src_list
 
+        result = {}
         try:
             result = json.loads(src_list)
         except TypeError:
             _LOGGER.error("Invalid format parameter: %s", str(src_list))
-
         return result
 
     @staticmethod
