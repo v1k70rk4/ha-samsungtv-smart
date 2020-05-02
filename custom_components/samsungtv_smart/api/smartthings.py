@@ -289,14 +289,16 @@ class SmartThingsTV:
 
         # device_state = data['main']['switch']['value']
         device_volume = data["main"]["volume"]["value"]
-        device_volume = int(device_volume) / 100
         device_muted = data["main"]["mute"]["value"]
         device_all_sources = json.loads(data["main"]["supportedInputSources"]["value"])
         device_source = data["main"]["inputSource"]["value"]
         device_tv_chan = data["main"]["tvChannel"]["value"]
         device_tv_chan_name = data["main"]["tvChannelName"]["value"]
 
-        self._volume = device_volume
+        if device_volume.isdigit():
+            self._volume = int(device_volume) / 100
+        else:
+            self._volume = 0
         self._source_list = device_all_sources
         if device_muted == "mute":
             self._muted = True
