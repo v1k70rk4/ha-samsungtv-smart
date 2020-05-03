@@ -295,7 +295,7 @@ class SmartThingsTV:
         device_tv_chan = data["main"]["tvChannel"]["value"]
         device_tv_chan_name = data["main"]["tvChannelName"]["value"]
 
-        if device_volume.isdigit():
+        if device_volume and device_volume.isdigit():
             self._volume = int(device_volume) / 100
         else:
             self._volume = 0
