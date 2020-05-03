@@ -212,9 +212,11 @@ class SamsungTVWS:
             self.token = token
 
     def _ws_send(self, command, key_press_delay=None, use_control=False):
+        using_remote = False
         if not use_control:
             if self._ws_remote:
                 connection = self._ws_remote
+                using_remote = True
             else:
                 connection = self.open()
         elif self._ws_control:
@@ -224,6 +226,9 @@ class SamsungTVWS:
 
         payload = json.dumps(command)
         connection.send(payload)
+        if using_remote:
+            # we consider a message sent valid as a ping
+            self._last_ping = datetime.now()
 
         if key_press_delay is None:
             time.sleep(self.key_press_delay)
