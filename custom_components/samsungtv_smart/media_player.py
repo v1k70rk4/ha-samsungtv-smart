@@ -13,12 +13,12 @@ import voluptuous as vol
 from aiohttp import ClientConnectionError, ClientSession, ClientResponseError
 from async_timeout import timeout
 
-from .api.samsungws import SamsungTVWS
+from .api.samsungws import SamsungTVWS, ArtModeStatus
 from .api.smartthings import SmartThingsTV
 from .api.upnp import upnp
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.event import call_later
+from homeassistant.helpers.event import async_call_later
 from homeassistant.util import Throttle
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
@@ -80,7 +80,7 @@ from .const import (
     WS_PREFIX,
 )
 
-HTTP_APPCHECK_TIMEOUT = 1
+KEYHOLD_MAX_DELAY = 5.0
 KEYPRESS_DEFAULT_DELAY = 0.5
 KEYPRESS_MAX_DELAY = 2.0
 KEYPRESS_MIN_DELAY = 0.2
@@ -88,7 +88,7 @@ MAX_ST_ERROR_COUNT = 4
 MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
 POWER_OFF_DELAY = 20
-POWER_ON_DELAY = 3
+POWER_ON_DELAY = 5
 ST_APP_SEPARATOR = "/"
 ST_UPDATE_TIMEOUT = 5
 
@@ -333,6 +333,11 @@ class SamsungTVDevice(MediaPlayerDevice):
         if result:
             self._ws.start_client()
             self._ws.get_running_app()
+            if (
+                self._ws.artmode_status == ArtModeStatus.On or
+                self._ws.artmode_status == ArtModeStatus.Unavailable
+            ):
+                result = False
         else:
             self._ws.stop_client()
 
@@ -547,7 +552,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._end_of_power_off = None
 
     def send_command(
-        self, payload, command_type="send_key", retry_count=1, key_press_delay=0
+        self, payload, command_type="send_key", key_press_delay: float = 0
     ):
         """Send a key to the tv and handles exceptions."""
         if key_press_delay < 0:
@@ -558,7 +563,26 @@ class SamsungTVDevice(MediaPlayerDevice):
                 # run_app(self, app_id, app_type='DEEP_LINK', meta_tag='')
                 self._ws.run_app(payload)
             else:
-                self._ws.send_key(payload, key_press_delay)
+                hold_delay = 0
+                source_keys = payload.split(",")
+                key_code = source_keys[0]
+                if len(source_keys) > 1:
+
+                    def get_hold_time():
+                        hold_time = source_keys[1].replace(" ", "")
+                        if not hold_time:
+                            return 0
+                        if not hold_time.isdigit():
+                            return 0
+                        hold_time = int(hold_time)/1000
+                        return min(hold_time, KEYHOLD_MAX_DELAY)
+
+                    hold_delay = get_hold_time()
+
+                if hold_delay > 0:
+                    self._ws.hold_key(key_code, hold_delay)
+                else:
+                    self._ws.send_key(key_code, key_press_delay)
 
         except (ConnectionResetError, AttributeError, BrokenPipeError):
             _LOGGER.debug(
@@ -579,10 +603,10 @@ class SamsungTVDevice(MediaPlayerDevice):
         return True
 
     async def async_send_command(
-        self, payload, command_type="send_key", retry_count=1, key_press_delay=0
+        self, payload, command_type="send_key", key_press_delay: float = 0
     ):
         return await self.hass.async_add_executor_job(
-            self.send_command, payload, command_type, retry_count, key_press_delay
+            self.send_command, payload, command_type, key_press_delay
         )
 
     @property
@@ -715,6 +739,12 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._end_of_power_off = None
             self.send_command("KEY_POWER")
 
+        elif self._ws.artmode_status == ArtModeStatus.On:
+            # power off from artmode
+            self.send_command("KEY_POWER")
+            # power on
+            self.send_command("KEY_POWER")
+
         elif self._state == STATE_OFF:
             if self._mac:
                 if self._broadcast:
@@ -726,17 +756,26 @@ class SamsungTVDevice(MediaPlayerDevice):
         """Turn the media player on."""
         await self.hass.async_add_executor_job(self._turn_on)
         if self._state == STATE_OFF:
-            await asyncio.sleep(POWER_ON_DELAY)
-            self.async_schedule_update_ha_state(True)
+            def update_status(now):
+                self.async_schedule_update_ha_state(True)
+            async_call_later(self.hass, POWER_ON_DELAY, update_status)
 
-    async def async_turn_off(self):
+    def _turn_off(self):
         """Turn off media player."""
-        if (not self._power_off_in_progress()) and self._state != STATE_OFF:
+        if not self._power_off_in_progress() and self._state != STATE_OFF:
 
             self._end_of_power_off = dt_util.utcnow() + timedelta(
                 seconds=POWER_OFF_DELAY
             )
-            await self.async_send_command("KEY_POWER")
+            if self._ws.artmode_status == ArtModeStatus.Off:
+                self.send_command("KEY_POWER")
+            self.send_command("KEY_POWER")
+        elif self._ws.artmode_status == ArtModeStatus.On:
+            self.send_command("KEY_POWER")
+
+    async def async_turn_off(self):
+        """Turn the media player on."""
+        await self.hass.async_add_executor_job(self._turn_off)
 
     @property
     def volume_level(self):
