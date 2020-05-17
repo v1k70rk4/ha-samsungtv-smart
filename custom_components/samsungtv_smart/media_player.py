@@ -552,7 +552,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._end_of_power_off = None
 
     def send_command(
-        self, payload, command_type="send_key", key_press_delay: float = 0
+        self, payload, command_type="send_key", key_press_delay: float = 0, press=False
     ):
         """Send a key to the tv and handles exceptions."""
         if key_press_delay < 0:
@@ -582,7 +582,9 @@ class SamsungTVDevice(MediaPlayerDevice):
                 if hold_delay > 0:
                     self._ws.hold_key(key_code, hold_delay)
                 else:
-                    self._ws.send_key(key_code, key_press_delay)
+                    self._ws.send_key(
+                        key_code, key_press_delay, "Press" if press else "Click"
+                    )
 
         except (ConnectionResetError, AttributeError, BrokenPipeError):
             _LOGGER.debug(
@@ -603,10 +605,10 @@ class SamsungTVDevice(MediaPlayerDevice):
         return True
 
     async def async_send_command(
-        self, payload, command_type="send_key", key_press_delay: float = 0
+        self, payload, command_type="send_key", key_press_delay: float = 0, press=False
     ):
         return await self.hass.async_add_executor_job(
-            self.send_command, payload, command_type, key_press_delay
+            self.send_command, payload, command_type, key_press_delay, press
         )
 
     @property
@@ -740,9 +742,7 @@ class SamsungTVDevice(MediaPlayerDevice):
             self.send_command("KEY_POWER")
 
         elif self._ws.artmode_status == ArtModeStatus.On:
-            # power off from artmode
-            self.send_command("KEY_POWER")
-            # power on
+            # power on from art mode
             self.send_command("KEY_POWER")
 
         elif self._state == STATE_OFF:
@@ -767,11 +767,10 @@ class SamsungTVDevice(MediaPlayerDevice):
             self._end_of_power_off = dt_util.utcnow() + timedelta(
                 seconds=POWER_OFF_DELAY
             )
-            if self._ws.artmode_status == ArtModeStatus.Off:
+            if self._ws.artmode_status == ArtModeStatus.Unsupported:
                 self.send_command("KEY_POWER")
-            self.send_command("KEY_POWER")
-        elif self._ws.artmode_status == ArtModeStatus.On:
-            self.send_command("KEY_POWER")
+            else:
+                self.send_command("KEY_POWER", press=True)
 
     async def async_turn_off(self):
         """Turn the media player on."""
