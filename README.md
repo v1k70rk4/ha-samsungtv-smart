@@ -85,8 +85,8 @@ starting configuration.
 
 ### Option A: Configuration using the web UI [**recommended**]
 
-1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' 
-locate '**SamsungTV Smart**' and click 'Configure'.
+1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Click `+` button in botton right corner,
+search '**SamsungTV Smart**' and click 'Configure'.
 2. In the configuration mask, enter the IP address of the TV, the name for the Entity and the SmartThings personal 
 access token (if created) and then click 'Submit'
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
@@ -106,6 +106,17 @@ the following lines:
 2. Restart Home Assistant.
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
 4. Congrats! You're all set!
+
+## Configuration options
+
+From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Identify the '**SamsungTV Smart**'
+integration configured for your TV and click the `OPTIONS` button.<br/>
+Here you chan change the following options:  
+
+- **Use SmartThings TV Channels information**<br/>
+When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
+about the TV Channel and TV Channel Name or Running App<br/>
+**Note: in many case this information is not properly updated, so this option is disabled by default.**<br/>
 
 ## Custom configuration parameters
 
@@ -255,7 +266,7 @@ service: media_player.play_media
   "media_content_id": "KEY_CODE"
 }
 ```
-**Note**: Change "KEY_CODEKEY" by desired key_code. (also works with key chaining and SmartThings keys: ST_TV, ST_HDMI1, ST_HDMI2, ST_HDMI3, etc. / see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))
+**Note**: Change "KEY_CODE" by desired [key_code](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md). (also works with key chaining and SmartThings keys: ST_TV, ST_HDMI1, ST_HDMI2, ST_HDMI3, etc. / see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))
 
 Script example:
 ```
@@ -265,15 +276,24 @@ tv_channel_down:
   - service: media_player.play_media
     data:
       entity_id: media_player.samsung_tv55
-      media_content_id: KEY_CHDOWN
       media_content_type: "send_key"
+      media_content_id: KEY_CHDOWN
 ```
 
+### Hold Keys
+```
+service: media_player.play_media
+```
 
-***Key Codes***
----------------
-To see the complete list of known keys, [check this list](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md)
+```json
+{
+  "entity_id": "media_player.samsungtv",
+  "media_content_type": "send_key",
+  "media_content_id": "KEY_CODE, <hold_time>"
+}
+```
 
+**Note**: Change "KEY_CODE" by desired [key_code](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md) and <hold_time> with a valid numeric value in milliseconds (this also works with key chaining but not with SmartThings keys).
 
 ***Key Chaining Patterns***
 ---------------

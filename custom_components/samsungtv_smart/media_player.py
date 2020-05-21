@@ -18,15 +18,11 @@ from .api.smartthings import SmartThingsTV
 from .api.upnp import upnp
 
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.event import async_call_later
 from homeassistant.util import Throttle
 from homeassistant.util import dt as dt_util
-from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
-
-from homeassistant.components.media_player import (
-    MediaPlayerDevice,
-    DEVICE_CLASS_TV,
-)
+from homeassistant.components.media_player import DEVICE_CLASS_TV
 
 from homeassistant.components.media_player.const import (
     SUPPORT_PAUSE,
@@ -71,14 +67,20 @@ from .const import (
     CONF_DEVICE_MODEL,
     CONF_DEVICE_OS,
     CONF_LOAD_ALL_APPS,
+    CONF_SCAN_APP_HTTP,
     CONF_SHOW_CHANNEL_NR,
     CONF_SOURCE_LIST,
     CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
-    CONF_SCAN_APP_HTTP,
+    CONF_USE_ST_CHANNEL_INFO,
     STD_APP_LIST,
     WS_PREFIX,
 )
+
+try:
+    from homeassistant.components.media_player import MediaPlayerEntity
+except ImportError:
+    from homeassistant.components.media_player import MediaPlayerDevice as MediaPlayerEntity
 
 KEYHOLD_MAX_DELAY = 5.0
 KEYPRESS_DEFAULT_DELAY = 0.5
@@ -126,30 +128,31 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     # session used by aiohttp
     session = hass.helpers.aiohttp_client.async_get_clientsession()
 
-    host = config_entry.data[CONF_HOST]
+    entry_id = config_entry.entry_id
     config = config_entry.data.copy()
-    add_conf = hass.data[DOMAIN][host]
+    add_conf = hass.data[DOMAIN][config_entry.unique_id]
     for attr, value in add_conf.items():
         if value:
             config[attr] = value
     _LOGGER.debug(config)
 
-    async_add_entities([SamsungTVDevice(config, session)])
+    async_add_entities([SamsungTVDevice(config, entry_id, session)])
     _LOGGER.info(
         "Samsung TV %s:%d added as '%s'",
-        host,
+        config.get(CONF_HOST),
         config.get(CONF_PORT),
         config.get(CONF_NAME),
     )
 
 
-class SamsungTVDevice(MediaPlayerDevice):
+class SamsungTVDevice(MediaPlayerEntity):
     """Representation of a Samsung TV."""
 
-    def __init__(self, config, session: ClientSession):
+    def __init__(self, config, entry_id, session: ClientSession):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
+        self._entry_id = entry_id
         self._session = session
         self._host = config.get(CONF_HOST)
         self._name = config.get(CONF_NAME)
@@ -526,9 +529,12 @@ class SamsungTVDevice(MediaPlayerDevice):
 
         """Required to get source and media title"""
         if self._st:
+            use_channel_info = self.hass.data[DOMAIN][self._entry_id][
+                "options"
+            ][CONF_USE_ST_CHANNEL_INFO]
             try:
                 with timeout(ST_UPDATE_TIMEOUT):
-                    await self._st.async_device_update()
+                    await self._st.async_device_update(use_channel_info)
                 self._st_error_count = 0
             except (
                 asyncio.TimeoutError,

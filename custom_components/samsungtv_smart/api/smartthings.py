@@ -259,12 +259,15 @@ class SmartThingsTV:
             return True
         return False
 
-    async def async_device_update(self):
+    async def async_device_update(self, use_channel_info: bool = None):
         """Query device status on SmartThing"""
 
         device_id = self._device_id
         if not device_id:
             return
+
+        if use_channel_info is not None:
+            self._refresh_status = use_channel_info
 
         api_device = f"{API_DEVICES}/{device_id}"
         api_device_status = f"{api_device}/states"
@@ -316,6 +319,9 @@ class SmartThingsTV:
         if self._refresh_status:
             self._channel = device_tv_chan
             self._channel_name = device_tv_chan_name
+        else:
+            self._channel = ""
+            self._channel_name = ""
 
     async def async_send_command(self, cmdtype, command=""):
         """Send a command too the device"""

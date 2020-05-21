@@ -168,7 +168,7 @@ class SamsungTVWS:
 
         self._ws_art = None
         self._client_art = None
-        self.client_art_supported = 2
+        self._client_art_supported = 2
 
         self._ping = Ping(self.host, 1)
 
@@ -478,7 +478,7 @@ class SamsungTVWS:
             return
         if event == "ms.channel.connect":
             _LOGGING.debug("Message art: received connect")
-            self.client_art_supported = 1
+            self._client_art_supported = 1
         elif event == "ms.channel.ready":
             _LOGGING.debug("Message art: channel ready")
             self._get_artmode_status()
@@ -599,11 +599,11 @@ class SamsungTVWS:
                 self._client_control.start()
 
             if (
-                    self.client_art_supported > 0 and
+                    self._client_art_supported > 0 and
                     (self._client_art is None or not self._client_art.is_alive())
                ):
-                if self.client_art_supported > 1:
-                    self.client_art_supported = 0
+                if self._client_art_supported > 1:
+                    self._client_art_supported = 0
                 self._client_art = Thread(target=self._client_art_thread)
                 self._client_art.name = "SamsungArt"
                 self._client_art.setDaemon(True)

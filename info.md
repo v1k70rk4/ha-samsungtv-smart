@@ -48,8 +48,8 @@ starting configuration.
 
 ### Option A: Configuration using the web UI [**recommended**]
 
-1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Under 'Set up a new integration' 
-locate '**SamsungTV Smart**' and click 'Configure'.
+1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Click `+` button in botton right corner,
+search '**SamsungTV Smart**' and click 'Configure'.
 2. In the configuration mask, enter the IP address of the TV, the name for the Entity and the SmartThings personal 
 access token (if created) and then click 'Submit'
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
@@ -69,6 +69,17 @@ the following lines:
 2. Restart Home Assistant.
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
 4. Congrats! You're all set!
+
+## Configuration options
+
+From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Identify the '**SamsungTV Smart**'
+integration configured for your TV and click the `OPTIONS` button.<br/>
+Here you chan change the following options:  
+
+- **Use SmartThings TV Channels information**<br/>
+When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
+about the TV Channel and TV Channel Name or Running App<br/>
+**Note: in many case this information is not properly updated, so this option is disabled by default.**<br/>
 
 ## Custom configuration parameters
 
