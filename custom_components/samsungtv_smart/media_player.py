@@ -231,7 +231,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._st = SmartThingsTV(
                 api_key=api_key,
                 device_id=device_id,
-                refresh_status=True,  # may became a config option to limit write on the cloud???
+                use_channel_info=True,
                 session=session,
             )
 
