@@ -513,7 +513,6 @@ class SamsungTVWS:
         if not data_str:
             return
         data = self._process_api_response(data_str)
-        _LOGGING.info(data)
         event = data.get("event", "")
         if event == "art_mode_changed":
             status = data.get("status", "")
