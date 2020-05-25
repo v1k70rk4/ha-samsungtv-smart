@@ -498,9 +498,9 @@ class SamsungTVWS:
             {
                 "method": "ms.channel.emit",
                 "params": {
-                    "event": "art_app_request",
+                    "data": json.dumps(msg_data),
                     "to": "host",
-                    "data": str(msg_data),
+                    "event": "art_app_request",
                 },
             },
             key_press_delay=0,
