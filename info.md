@@ -76,10 +76,21 @@ From the Home Assistant front-end, navigate to 'Configuration' then 'Integration
 integration configured for your TV and click the `OPTIONS` button.<br/>
 Here you chan change the following options:  
 
+- **Use SmartThings TV Status information**<br/>
+(default = True)
+When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
+about the TV Status. This information is always used in conjunction with local ping result.<br/>
+
 - **Use SmartThings TV Channels information**<br/>
+(default = False)
 When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
 about the TV Channel and TV Channel Name or Running App<br/>
 **Note: in many case this information is not properly updated, so this option is disabled by default.**<br/>
+
+- **Seconds to delay power ON status**<br/>
+(default=30, range from 0 to 60)<br/>
+This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
+ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
 
 ## Custom configuration parameters
 

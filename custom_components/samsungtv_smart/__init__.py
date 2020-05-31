@@ -39,13 +39,16 @@ from .const import (
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
     CONF_LOAD_ALL_APPS,
+    CONF_POWER_ON_DELAY,
     CONF_SOURCE_LIST,
     CONF_SHOW_CHANNEL_NR,
+    CONF_USE_ST_CHANNEL_INFO,
+    CONF_USE_ST_STATUS_INFO,
     CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
     CONF_SCAN_APP_HTTP,
-    CONF_USE_ST_CHANNEL_INFO,
     DATA_LISTENER,
+    DEFAULT_POWER_ON_DELAY,
     DEFAULT_SOURCE_LIST,
     UPDATE_METHODS,
     WS_PREFIX,
@@ -84,6 +87,7 @@ CONFIG_SCHEMA = vol.Schema(
             cv.ensure_list,
             [
                 cv.deprecated(CONF_PORT),
+                cv.deprecated(CONF_UPDATE_METHOD),
                 cv.deprecated(CONF_UPDATE_CUSTOM_PING_URL),
                 cv.deprecated(CONF_SCAN_APP_HTTP),
                 vol.Schema(
@@ -293,9 +297,15 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
         entry.entry_id,
         {
             "options": {
+                CONF_USE_ST_STATUS_INFO: entry.options.get(
+                    CONF_USE_ST_STATUS_INFO, True
+                ),
                 CONF_USE_ST_CHANNEL_INFO: entry.options.get(
                     CONF_USE_ST_CHANNEL_INFO, False
-                )
+                ),
+                CONF_POWER_ON_DELAY: entry.options.get(
+                    CONF_POWER_ON_DELAY, DEFAULT_POWER_ON_DELAY
+                ),
             },
             DATA_LISTENER: [entry.add_update_listener(update_listener)],
         }
