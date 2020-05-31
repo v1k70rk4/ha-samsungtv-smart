@@ -84,6 +84,8 @@ try:
 except ImportError:
     from homeassistant.components.media_player import MediaPlayerDevice as MediaPlayerEntity
 
+ATTR_ART_MODE_STATUS = "art_mode_status"
+
 KEYHOLD_MAX_DELAY = 5.0
 KEYPRESS_DEFAULT_DELAY = 0.5
 KEYPRESS_MAX_DELAY = 2.0
@@ -1054,6 +1056,17 @@ class SamsungTVDevice(MediaPlayerEntity):
             _device_info["sw_version"] = self._device_os
 
         return _device_info
+
+    @property
+    def device_state_attributes(self):
+        """Return the optional state attributes."""
+        data = {}
+        if self._ws.artmode_status != ArtModeStatus.Unsupported:
+            status_on = self._ws.artmode_status == ArtModeStatus.On
+            data.update({
+                ATTR_ART_MODE_STATUS: STATE_ON if status_on else STATE_OFF
+            })
+        return data
 
     def _will_remove_from_hass(self):
         self._ws.stop_client()

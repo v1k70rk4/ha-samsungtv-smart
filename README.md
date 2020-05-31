@@ -114,12 +114,12 @@ integration configured for your TV and click the `OPTIONS` button.<br/>
 Here you chan change the following options:  
 
 - **Use SmartThings TV Status information**<br/>
-(default = True)
+(default = True)<br/>
 When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
 about the TV Status. This information is always used in conjunction with local ping result.<br/>
 
 - **Use SmartThings TV Channels information**<br/>
-(default = False)
+(default = False)<br/>
 When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
 about the TV Channel and TV Channel Name or Running App<br/>
 **Note: in many case this information is not properly updated, so this option is disabled by default.**<br/>
