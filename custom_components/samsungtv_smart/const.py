@@ -1,4 +1,18 @@
 """Constants for the samsungtv_smart integration."""
+from enum import Enum
+
+
+class AppLoadMethod(Enum):
+    All = 1
+    Default = 2
+    NotLoad = 3
+
+
+APP_LOAD_METHODS = {
+    AppLoadMethod.All.value: "All Apps",
+    AppLoadMethod.Default.value: "Default Apps",
+    AppLoadMethod.NotLoad.value: "Not Load",
+}
 
 DOMAIN = "samsungtv_smart"
 
@@ -21,6 +35,7 @@ DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 5
 DEFAULT_UPDATE_METHOD = UPDATE_METHODS["Ping"]
 CONF_APP_LIST = "app_list"
+CONF_APP_LOAD_METHOD = "app_load_method"
 CONF_DEVICE_NAME = "device_name"
 CONF_DEVICE_MODEL = "device_model"
 CONF_SOURCE_LIST = "source_list"

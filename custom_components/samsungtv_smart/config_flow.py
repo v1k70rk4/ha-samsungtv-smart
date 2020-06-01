@@ -29,11 +29,13 @@ from homeassistant.const import (
 
 # pylint:disable=unused-import
 from . import SamsungTVInfo
+
 from .const import (
     DOMAIN,
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
     CONF_DEVICE_OS,
+    CONF_APP_LOAD_METHOD,
     CONF_POWER_ON_DELAY,
     CONF_USE_ST_CHANNEL_INFO,
     CONF_USE_ST_STATUS_INFO,
@@ -44,6 +46,8 @@ from .const import (
     RESULT_ST_MULTI_DEVICES,
     RESULT_SUCCESS,
     RESULT_WRONG_APIKEY,
+    APP_LOAD_METHODS,
+    AppLoadMethod,
     CONF_UPDATE_METHOD,
     UPDATE_METHODS,
 )
@@ -364,6 +368,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         data_schema = vol.Schema(
             {
+                vol.Optional(
+                    CONF_APP_LOAD_METHOD,
+                    default=self.config_entry.options.get(
+                        CONF_APP_LOAD_METHOD, AppLoadMethod.All.value
+                    ),
+                ): vol.In(APP_LOAD_METHODS),
                 vol.Optional(
                     CONF_USE_ST_STATUS_INFO,
                     default=self.config_entry.options.get(

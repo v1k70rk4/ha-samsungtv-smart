@@ -113,6 +113,13 @@ From the Home Assistant front-end, navigate to 'Configuration' then 'Integration
 integration configured for your TV and click the `OPTIONS` button.<br/>
 Here you chan change the following options:  
 
+- **Applications list load mode at startup**<br/>
+Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
+This option determine the mode in witch application list is automatic generated if a custom `app_list` is not defined 
+in configuration file.<br/>
+With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` a list will be generated 
+limited to few application (the most common), with `Not Load` application list will be empty.<br/>
+
 - **Use SmartThings TV Status information**<br/>
 (default = True)<br/>
 When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
@@ -200,12 +207,6 @@ Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify":
 Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), 
 [List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
 
-- **load_all_apps:**<br/>
-(boolean)(Optional)<br/>
-This option is `True` by default.</br>
-Setting this parameter to false, if a custom `app_list` is not defined, the automatic app_list will be generated  
-limited to few application (the most common).<br/>
-
 - **show_channel_number:**<br/>
 (boolean)(Optional)<br/>
 If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media 
@@ -218,6 +219,14 @@ titles, by setting this to True the TV Channel Number will also be attached to t
 The ip address of the host to send the magic packet (for wakeonlan) to if the "mac" property is also set.<br/>
 Default value: "255.255.255.255"<br/>
 Example value: "192.168.1.255"<br/>
+
+### Deprecated configuration parameters
+
+- **load_all_apps:** (obsolete/not used from v0.3.4 and replaced by Configuration options)<br/>
+(boolean)(Optional)<br/>
+This option is `True` by default.</br>
+Setting this parameter to false, if a custom `app_list` is not defined, the automatic app_list will be generated  
+limited to few application (the most common).<br/>
 
 - **update_method:** (obsolete/not used from v0.3.3)<br/>
 (string)(Optional)<br/>

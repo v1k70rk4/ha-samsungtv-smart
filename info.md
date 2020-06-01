@@ -76,6 +76,13 @@ From the Home Assistant front-end, navigate to 'Configuration' then 'Integration
 integration configured for your TV and click the `OPTIONS` button.<br/>
 Here you chan change the following options:  
 
+- **Applications list load mode at startup**<br/>
+Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
+This option determine the mode in witch application list is automatic generated if a custom `app_list` is not defined 
+in configuration file.<br/>
+With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` a list will be generated 
+limited to few application (the most common), with `Not Load` application list will be empty.<br/>
+
 - **Use SmartThings TV Status information**<br/>
 (default = True)<br/>
 When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information

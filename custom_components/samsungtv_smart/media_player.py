@@ -63,10 +63,10 @@ from .const import (
     DEFAULT_SOURCE_LIST,
     DEFAULT_APP,
     CONF_APP_LIST,
+    CONF_APP_LOAD_METHOD,
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
     CONF_DEVICE_OS,
-    CONF_LOAD_ALL_APPS,
     CONF_POWER_ON_DELAY,
     CONF_SHOW_CHANNEL_NR,
     CONF_SOURCE_LIST,
@@ -74,6 +74,8 @@ from .const import (
     CONF_USE_ST_STATUS_INFO,
     STD_APP_LIST,
     WS_PREFIX,
+    AppLoadMethod,
+    CONF_LOAD_ALL_APPS,
     CONF_SCAN_APP_HTTP,
     CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
@@ -167,13 +169,13 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._device_os = config.get(CONF_DEVICE_OS)
         self._show_channel_number = config.get(CONF_SHOW_CHANNEL_NR, False)
         self._broadcast = config.get(CONF_BROADCAST_ADDRESS)
-        self._load_all_apps = config.get(CONF_LOAD_ALL_APPS, True)
         self._timeout = config.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
 
         # obsolete
         self._update_method = config.get(CONF_UPDATE_METHOD)
         self._update_custom_ping_url = config.get(CONF_UPDATE_CUSTOM_PING_URL)
         self._scan_app_http = config.get(CONF_SCAN_APP_HTTP, True)
+        self._load_all_apps = config.get(CONF_LOAD_ALL_APPS, True)
 
         port = config.get(CONF_PORT)
         api_key = config.get(CONF_API_KEY, None)
@@ -465,6 +467,12 @@ class SamsungTVDevice(MediaPlayerEntity):
         if not app_list:
             return
 
+        app_load_method = AppLoadMethod(
+            self.hass.data[DOMAIN][self._entry_id][
+                "options"
+            ][CONF_APP_LOAD_METHOD]
+        )
+
         # app_list is a list of dict
         clean_app_list = {}
         clean_app_list_ST = {}
@@ -478,16 +486,17 @@ class SamsungTVDevice(MediaPlayerEntity):
                 # app_list is automatically created only with apps in hard coded short list (STD_APP_LIST)
                 # other available apps are dumped in a file that can be used to create a custom list
                 # this is to avoid unuseful long list that can impact performance
-                if st_app_id != "###" or self._load_all_apps:
-                    clean_app_list[app_name] = app_id
-                    clean_app_list_ST[app_name] = (
-                        st_app_id if st_app_id != "" else app_id
-                    )
-                    full_app_id = (
-                        app_id + ST_APP_SEPARATOR + st_app_id
-                        if st_app_id != "" and st_app_id != "###"
-                        else app_id
-                    )
+                if app_load_method != AppLoadMethod.NotLoad:
+                    if st_app_id != "###" or app_load_method == AppLoadMethod.All:
+                        clean_app_list[app_name] = app_id
+                        clean_app_list_ST[app_name] = (
+                            st_app_id if st_app_id != "" else app_id
+                        )
+                        full_app_id = (
+                            app_id + ST_APP_SEPARATOR + st_app_id
+                            if st_app_id != "" and st_app_id != "###"
+                            else app_id
+                        )
 
                 dump_app_list[app_name] = full_app_id
 

@@ -36,6 +36,7 @@ from .const import (
     DEFAULT_TIMEOUT,
     DEFAULT_UPDATE_METHOD,
     CONF_APP_LIST,
+    CONF_APP_LOAD_METHOD,
     CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
     CONF_LOAD_ALL_APPS,
@@ -57,6 +58,7 @@ from .const import (
     RESULT_ST_DEVICE_NOT_FOUND,
     RESULT_SUCCESS,
     RESULT_WRONG_APIKEY,
+    AppLoadMethod,
 )
 
 SAMSMART_SCHEMA = {
@@ -64,10 +66,10 @@ SAMSMART_SCHEMA = {
     vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string,
     vol.Optional(CONF_APP_LIST): cv.string,
     vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-    vol.Optional(CONF_UPDATE_METHOD): vol.In(UPDATE_METHODS.values()),
     vol.Optional(CONF_SHOW_CHANNEL_NR, default=False): cv.boolean,
     vol.Optional(CONF_BROADCAST_ADDRESS): cv.string,
     vol.Optional(CONF_LOAD_ALL_APPS, default=True): cv.boolean,
+    vol.Optional(CONF_UPDATE_METHOD): vol.In(UPDATE_METHODS.values()),
     vol.Optional(CONF_UPDATE_CUSTOM_PING_URL): cv.string,
     vol.Optional(CONF_SCAN_APP_HTTP, default=True): cv.boolean,
 }
@@ -86,6 +88,7 @@ CONFIG_SCHEMA = vol.Schema(
         DOMAIN: vol.All(
             cv.ensure_list,
             [
+                cv.deprecated(CONF_LOAD_ALL_APPS),
                 cv.deprecated(CONF_PORT),
                 cv.deprecated(CONF_UPDATE_METHOD),
                 cv.deprecated(CONF_UPDATE_CUSTOM_PING_URL),
@@ -297,6 +300,9 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
         entry.entry_id,
         {
             "options": {
+                CONF_APP_LOAD_METHOD: entry.options.get(
+                    CONF_APP_LOAD_METHOD, AppLoadMethod.All.value
+                ),
                 CONF_USE_ST_STATUS_INFO: entry.options.get(
                     CONF_USE_ST_STATUS_INFO, True
                 ),

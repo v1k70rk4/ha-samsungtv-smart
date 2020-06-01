@@ -56,6 +56,7 @@
         "step": {
             "init": {
                 "data": {
+                    "app_load_method": "Applications list load mode at startup",
                     "use_st_status_info": "Use SmartThings TV Status information",
                     "use_st_channel_info": "Use SmartThings TV Channels information",
                     "power_on_delay": "Seconds to delay power ON status (0-60)"
