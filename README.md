@@ -126,10 +126,10 @@ When enabled and SmartThings is configured, the component will try to retrieve f
 about the TV Status. This information is always used in conjunction with local ping result.<br/>
 
 - **Use SmartThings TV Channels information**<br/>
-(default = False)<br/>
+(default = True)<br/>
 When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
-about the TV Channel and TV Channel Name or Running App<br/>
-**Note: in many case this information is not properly updated, so this option is disabled by default.**<br/>
+about the TV Channel and TV Channel Name or the Running App<br/>
+**Note: in some case this information is not properly updated, disabled it you have incorrect information.**<br/>
 
 - **Seconds to delay power ON status**<br/>
 (default = 30, range from 0 to 60)<br/>
