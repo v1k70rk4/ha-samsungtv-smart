@@ -378,8 +378,9 @@ class SamsungTVDevice(MediaPlayerEntity):
                 "options"
             ][CONF_USE_ST_STATUS_INFO]
             if (
-                self._st.state == STStatus.STATE_OFF and self._state == STATE_ON
-                and use_st_status
+                self._st.state == STStatus.STATE_OFF and
+                self._st.prev_state != STStatus.STATE_OFF and
+                self._state == STATE_ON and use_st_status
             ):
                 result = False
 
@@ -395,6 +396,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._ws.stop_client()
 
         result = self._delay_power_on(result)
+        result = result and self._ws.is_connected
 
         self._state = STATE_ON if result else STATE_OFF
 

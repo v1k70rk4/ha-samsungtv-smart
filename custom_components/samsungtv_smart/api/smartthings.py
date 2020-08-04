@@ -112,6 +112,7 @@ class SmartThingsTV:
 
         self._device_name = None
         self._state = STStatus.STATE_UNKNOWN
+        self._prev_state = STStatus.STATE_UNKNOWN
         self._muted = False
         self._volume = 10
         self._source_list = None
@@ -147,6 +148,11 @@ class SmartThingsTV:
     def state(self):
         """Return currently state."""
         return self._state
+
+    @property
+    def prev_state(self):
+        """Return currently state."""
+        return self._prev_state
 
     @property
     def muted(self) -> bool:
@@ -286,6 +292,8 @@ class SmartThingsTV:
         api_device_status = f"{api_device}/states"
         # not used, just for reference
         api_device_main_status = f"{api_device}/components/main/status"
+
+        self._prev_state = self._state
 
         try:
             is_online = await self.async_device_health()
