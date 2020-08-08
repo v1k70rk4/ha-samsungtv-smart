@@ -18,9 +18,10 @@ from .api.smartthings import SmartThingsTV, STStatus
 from .api.upnp import upnp
 
 import homeassistant.helpers.config_validation as cv
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
-from homeassistant.util import Throttle
-from homeassistant.util import dt as dt_util
+from homeassistant.helpers.service import async_call_from_config, CONF_SERVICE_ENTITY_ID
+from homeassistant.util import dt as dt_util, Throttle
 from homeassistant.components.media_player import DEVICE_CLASS_TV
 
 from homeassistant.components.media_player.const import (
@@ -52,6 +53,8 @@ from homeassistant.const import (
     CONF_DEVICE_ID,
     CONF_TIMEOUT,
     CONF_API_KEY,
+    CONF_SERVICE,
+    CONF_SERVICE_DATA,
     STATE_OFF,
     STATE_ON,
     STATE_UNAVAILABLE,
@@ -70,8 +73,11 @@ from .const import (
     CONF_POWER_ON_DELAY,
     CONF_SHOW_CHANNEL_NR,
     CONF_SOURCE_LIST,
+    CONF_USE_MUTE_CHECK,
     CONF_USE_ST_CHANNEL_INFO,
     CONF_USE_ST_STATUS_INFO,
+    CONF_SYNC_TURN_OFF,
+    CONF_SYNC_TURN_ON,
     STD_APP_LIST,
     WS_PREFIX,
     AppLoadMethod,
@@ -93,12 +99,17 @@ KEYPRESS_DEFAULT_DELAY = 0.5
 KEYPRESS_MAX_DELAY = 2.0
 KEYPRESS_MIN_DELAY = 0.2
 MAX_ST_ERROR_COUNT = 4
+MAX_ST_CONN_ERROR_COUNT = 3
 MEDIA_TYPE_KEY = "send_key"
 MEDIA_TYPE_BROWSER = "browser"
 POWER_OFF_DELAY = 20
 POWER_ON_DELAY = 5
 ST_APP_SEPARATOR = "/"
 ST_UPDATE_TIMEOUT = 5
+
+SERVICE_TURN_OFF = "homeassistant.turn_off"
+SERVICE_TURN_ON = "homeassistant.turn_on"
+MAX_CONTROLLED_ENTITY = 4
 
 MIN_TIME_BETWEEN_APP_SCANS = timedelta(seconds=60)
 
@@ -215,6 +226,9 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._power_on_detected = None
         self._set_update_forced = False
         self._update_forced_time = None
+        self._fake_on = None
+        self._st_conn_error_count = 0
+
         self._token_file = None
 
         # Generate token file only for WS + SSL + Token connection
@@ -395,10 +409,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         else:
             self._ws.stop_client()
 
-        result = self._delay_power_on(result)
-        result = result and self._ws.is_connected
-
-        self._state = STATE_ON if result else STATE_OFF
+        return result
 
     async def _get_running_app(self):
 
@@ -591,11 +602,11 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._update_forced():
             return
 
+        options = self.hass.data[DOMAIN][self._entry_id]["options"]
+
         """Required to get source and media title"""
         if self._st:
-            use_channel_info = self.hass.data[DOMAIN][self._entry_id][
-                "options"
-            ][CONF_USE_ST_CHANNEL_INFO]
+            use_channel_info = options[CONF_USE_ST_CHANNEL_INFO]
             try:
                 with timeout(ST_UPDATE_TIMEOUT):
                     await self._st.async_device_update(use_channel_info)
@@ -612,7 +623,39 @@ class SamsungTVDevice(MediaPlayerEntity):
             _LOGGER.error("SamsungTV Smart - Error refreshing from SmartThings")
             self._st_error_count = 0
 
-        await self.hass.async_add_executor_job(self._ping_device)
+        result = await self.hass.async_add_executor_job(self._ping_device)
+
+        use_mute_check = options[CONF_USE_MUTE_CHECK]
+        if not result:
+            self._fake_on = None
+        elif self._state == STATE_OFF and use_mute_check:
+            first_detect = self._fake_on is None
+            if first_detect or self._fake_on is True:
+                is_muted = await self._upnp.async_get_mute()
+                self._fake_on = is_muted or not self._upnp.connected
+                if self._fake_on:
+                    if first_detect:
+                        _LOGGER.warning("SamsungTV Smart - Detected fake power on, status not updated")
+                    result = False
+
+        result = self._delay_power_on(result)
+        # result = result and self._ws.is_connected
+
+        if result and self._st:
+            if self._st.state != self._st.state.STATE_ON:
+                if self._st_conn_error_count < MAX_ST_CONN_ERROR_COUNT:
+                    self._st_conn_error_count += 1
+                    if self._st_conn_error_count == MAX_ST_CONN_ERROR_COUNT:
+                        _LOGGER.warning(
+                            "SamsungTV Smart - SmartThings connection is offline."
+                            " Check connection status on the phone App"
+                        )
+            else:
+                if self._st_conn_error_count >= MAX_ST_CONN_ERROR_COUNT:
+                    _LOGGER.warning("SamsungTV Smart - SmartThings connection now is online")
+                self._st_conn_error_count = 0
+
+        self._state = STATE_ON if result else STATE_OFF
 
         if self._state == STATE_ON and not self._power_off_in_progress():
             await self._update_volume_info()
@@ -834,28 +877,34 @@ class SamsungTVDevice(MediaPlayerEntity):
 
             self.hass.loop.call_later(POWER_ON_DELAY, update_status)
             self._power_on_detected = datetime.min
+            await self._async_switch_entity(True)
 
     def _turn_off(self):
         """Turn off media player."""
-        if not self._power_off_in_progress():
+        if self._power_off_in_progress():
+            return False
 
-            if self._state == STATE_ON:
-                if self._ws.artmode_status == ArtModeStatus.Unsupported:
-                    self.send_command("KEY_POWER")
-                else:
-                    self.send_command("KEY_POWER,3000")
-            elif self._ws.artmode_status == ArtModeStatus.On:
-                self.send_command("KEY_POWER,3000")
+        if self._state == STATE_ON:
+            if self._ws.artmode_status == ArtModeStatus.Unsupported:
+                self.send_command("KEY_POWER")
             else:
-                return
+                self.send_command("KEY_POWER,3000")
+        elif self._ws.artmode_status == ArtModeStatus.On:
+            self.send_command("KEY_POWER,3000")
+        else:
+            return False
 
-            self._end_of_power_off = dt_util.utcnow() + timedelta(
-                seconds=POWER_OFF_DELAY
-            )
+        self._end_of_power_off = dt_util.utcnow() + timedelta(
+            seconds=POWER_OFF_DELAY
+        )
+
+        return True
 
     async def async_turn_off(self):
         """Turn the media player on."""
-        await self.hass.async_add_executor_job(self._turn_off)
+        result = await self.hass.async_add_executor_job(self._turn_off)
+        if result:
+            await self._async_switch_entity(False)
 
     @property
     def volume_level(self):
@@ -1085,3 +1134,56 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     async def async_will_remove_from_hass(self):
         await self.hass.async_add_executor_job(self._will_remove_from_hass)
+
+    async def _async_switch_entity(self, power_on: bool):
+
+        if power_on:
+            service_name = SERVICE_TURN_ON
+            conf_entity = CONF_SYNC_TURN_ON
+        else:
+            service_name = SERVICE_TURN_OFF
+            conf_entity = CONF_SYNC_TURN_OFF
+
+        entity_list = self.hass.data[DOMAIN][self._entry_id][
+            "options"
+        ][conf_entity]
+
+        if not entity_list:
+            return
+
+        entity_array = entity_list.split(",")
+
+        for index, entity in enumerate(entity_array):
+            if index >= MAX_CONTROLLED_ENTITY:
+                _LOGGER.warning(
+                    "SamsungTV Smart - Maximum %s entities can be controlled",
+                    MAX_CONTROLLED_ENTITY,
+                )
+                break
+            if entity:
+                await self._async_call_service(service_name, entity)
+
+        return
+
+    async def _async_call_service(
+            self,
+            service_name,
+            entity_id,
+            variable_data=None,
+    ):
+        service_data = {
+            CONF_SERVICE: service_name,
+            CONF_SERVICE_ENTITY_ID: entity_id,
+        }
+
+        if variable_data:
+            service_data[CONF_SERVICE_DATA] = variable_data
+
+        try:
+            await async_call_from_config(
+                self.hass, service_data, blocking=False, validate_config=True,
+            )
+        except HomeAssistantError as ex:
+            _LOGGER.error("SamsungTV Smart - error %s", ex)
+
+        return

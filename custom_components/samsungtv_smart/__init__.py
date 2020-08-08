@@ -45,6 +45,9 @@ from .const import (
     CONF_SHOW_CHANNEL_NR,
     CONF_USE_ST_CHANNEL_INFO,
     CONF_USE_ST_STATUS_INFO,
+    CONF_USE_MUTE_CHECK,
+    CONF_SYNC_TURN_OFF,
+    CONF_SYNC_TURN_ON,
     CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
     CONF_SCAN_APP_HTTP,
@@ -309,8 +312,17 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
                 CONF_USE_ST_CHANNEL_INFO: entry.options.get(
                     CONF_USE_ST_CHANNEL_INFO, True
                 ),
+                CONF_USE_MUTE_CHECK: entry.options.get(
+                    CONF_USE_MUTE_CHECK, True
+                ),
                 CONF_POWER_ON_DELAY: entry.options.get(
                     CONF_POWER_ON_DELAY, DEFAULT_POWER_ON_DELAY
+                ),
+                CONF_SYNC_TURN_OFF: entry.options.get(
+                    CONF_SYNC_TURN_OFF, ""
+                ),
+                CONF_SYNC_TURN_ON: entry.options.get(
+                    CONF_SYNC_TURN_ON, ""
                 ),
             },
             DATA_LISTENER: [entry.add_update_listener(update_listener)],

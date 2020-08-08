@@ -10,9 +10,10 @@ DEFAULT_TIMEOUT = 0.2
 
 class upnp:
     def __init__(self, host, session: Optional[ClientSession] = None):
-        self.host = host
-        self.mute = False
-        self.volume = 0
+        self._host = host
+        self._mute = False
+        self._volume = 0
+        self._connected = False
         if session:
             self._session = session
             self._managed_session = False
@@ -45,15 +46,21 @@ class upnp:
         try:
             with timeout(DEFAULT_TIMEOUT):
                 async with self._session.post(
-                    f"http://{self.host}:9197/upnp/control/{protocole}1",
+                    f"http://{self._host}:9197/upnp/control/{protocole}1",
                     headers=headers,
                     data=body,
                     raise_for_status=True,
                 ) as resp:
                     response = await resp.content.read()
+                    self._connected = True
         except:
-            pass
+            self._connected = False
+
         return response
+
+    @property
+    def connected(self):
+        return self._connected
 
     async def async_get_volume(self):
         response = await self._SOAPrequest(
@@ -63,8 +70,8 @@ class upnp:
             volume_xml = response.decode("utf8")
             tree = ET.fromstring(volume_xml)
             for elem in tree.iter(tag="CurrentVolume"):
-                self.volume = elem.text
-        return self.volume
+                self._volume = elem.text
+        return self._volume
 
     async def async_set_volume(self, volume):
         await self._SOAPrequest(
@@ -84,10 +91,11 @@ class upnp:
             for elem in tree.iter(tag="CurrentMute"):
                 mute = elem.text
             if int(mute) == 0:
-                self.mute = False
+                self._mute = False
             else:
-                self.mute = True
-        return self.mute
+                self._mute = True
+
+        return self._mute
 
     async def async_set_current_media(self, url):
         """ Set media to playback and play it."""

@@ -39,6 +39,9 @@ from .const import (
     CONF_POWER_ON_DELAY,
     CONF_USE_ST_CHANNEL_INFO,
     CONF_USE_ST_STATUS_INFO,
+    CONF_USE_MUTE_CHECK,
+    CONF_SYNC_TURN_OFF,
+    CONF_SYNC_TURN_ON,
     DEFAULT_POWER_ON_DELAY,
     RESULT_NOT_SUCCESSFUL,
     RESULT_ST_DEVICE_NOT_FOUND,
@@ -48,8 +51,6 @@ from .const import (
     RESULT_WRONG_APIKEY,
     APP_LOAD_METHODS,
     AppLoadMethod,
-    CONF_UPDATE_METHOD,
-    UPDATE_METHODS,
 )
 
 CONFIG_RESULTS = {
@@ -387,11 +388,29 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     ),
                 ): bool,
                 vol.Optional(
+                    CONF_USE_MUTE_CHECK,
+                    default=self.config_entry.options.get(
+                        CONF_USE_MUTE_CHECK, True
+                    ),
+                ): bool,
+                vol.Optional(
                     CONF_POWER_ON_DELAY,
                     default=self.config_entry.options.get(
                         CONF_POWER_ON_DELAY, DEFAULT_POWER_ON_DELAY
                     ),
-                ): vol.All(vol.Coerce(float), vol.Clamp(min=0, max=60))
+                ): vol.All(vol.Coerce(float), vol.Clamp(min=0, max=60)),
+                vol.Optional(
+                    CONF_SYNC_TURN_OFF,
+                    default=self.config_entry.options.get(
+                        CONF_SYNC_TURN_OFF, ""
+                    ),
+                ): str,
+                vol.Optional(
+                    CONF_SYNC_TURN_ON,
+                    default=self.config_entry.options.get(
+                        CONF_SYNC_TURN_ON, ""
+                    ),
+                ): str
             }
         )
         return self.async_show_form(step_id="init", data_schema=data_schema)

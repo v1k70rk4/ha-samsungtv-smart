@@ -94,10 +94,23 @@ When enabled and SmartThings is configured, the component will try to retrieve f
 about the TV Channel and TV Channel Name or the Running App<br/>
 **Note: in some case this information is not properly updated, disabled it you have incorrect information.**<br/>
 
+- **Use volume mute status to detect fake power ON**<br/>
+(default = True)<br/>
+When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
+TV is powered on the volume is always unmuted.<br/>
+
 - **Seconds to delay power ON status**<br/>
 (default=30, range from 0 to 60)<br/>
 This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
 ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
+
+- **List of entity to Power OFF with TV (comma separated)**<br/>
+A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). 
+This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>
+
+- **List of entity to Power ON with TV (comma separated)**<br/>
+A list of HA entity to Turn ON when the TV entity is turned ON (maximum 4).
+This call the service `homeassistant.turn_on` for maximum the first 4 entity in the provided list.<br/>
 
 ## Custom configuration parameters
 

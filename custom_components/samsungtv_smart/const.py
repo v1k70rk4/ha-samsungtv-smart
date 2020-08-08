@@ -45,6 +45,9 @@ CONF_LOAD_ALL_APPS = "load_all_apps"
 CONF_POWER_ON_DELAY = "power_on_delay"
 CONF_USE_ST_CHANNEL_INFO = "use_st_channel_info"
 CONF_USE_ST_STATUS_INFO = "use_st_status_info"
+CONF_USE_MUTE_CHECK = "use_mute_check"
+CONF_SYNC_TURN_OFF = "sync_turn_off"
+CONF_SYNC_TURN_ON = "sync_turn_on"
 
 # obsolete
 CONF_UPDATE_METHOD = "update_method"
