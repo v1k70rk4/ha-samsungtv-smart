@@ -42,6 +42,7 @@ from .const import (
     CONF_USE_MUTE_CHECK,
     CONF_SYNC_TURN_OFF,
     CONF_SYNC_TURN_ON,
+    CONF_WS_NAME,
     DEFAULT_POWER_ON_DELAY,
     RESULT_NOT_SUCCESSFUL,
     RESULT_ST_DEVICE_NOT_FOUND,
@@ -62,10 +63,14 @@ CONFIG_RESULTS = {
 }
 
 CONF_ST_DEVICE = "st_devices"
+CONF_USE_HA_NAME = "use_ha_name_for_ws"
+DEFAULT_TV_NAME = "Samsung TV"
+
 DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_NAME): str,
+        vol.Optional(CONF_USE_HA_NAME, default=False): bool,
         vol.Optional(CONF_API_KEY): str,
     }
 )
@@ -94,7 +99,8 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._device_id = None
         self._name = None
         self._mac = None
-        # self._update_method = None
+        self._ws_name = None
+        self._use_default_name = False
 
         self._st_devices_schema = None
 
@@ -102,7 +108,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Generate new entry."""
         data = {
             CONF_HOST: self._host,
-            CONF_NAME: self._tvinfo._name,
+            CONF_NAME: self._name,
             CONF_ID: self._tvinfo._uuid,
             CONF_MAC: self._mac
             if not self._tvinfo._macaddress
@@ -110,10 +116,12 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_DEVICE_NAME: self._tvinfo._device_name,
             CONF_DEVICE_MODEL: self._tvinfo._device_model,
             CONF_PORT: self._tvinfo._port,
-            # CONF_UPDATE_METHOD: self._update_method,
         }
 
-        title = self._tvinfo._name
+        if self._ws_name:
+            data[CONF_WS_NAME] = self._ws_name
+
+        title = self._name if not self._use_default_name else self._tvinfo._device_name
         if self._api_key and self._device_id:
             data[CONF_API_KEY] = self._api_key
             data[CONF_DEVICE_ID] = self._device_id
@@ -180,7 +188,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _try_connect(self):
         """Try to connect and check auth."""
-        self._tvinfo = SamsungTVInfo(self.hass, self._host, self._name)
+        self._tvinfo = SamsungTVInfo(self.hass, self._host, self._name, self._ws_name)
 
         session = self.hass.helpers.aiohttp_client.async_get_clientsession()
         result = await self._tvinfo.get_device_info(
@@ -206,15 +214,21 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._host = ip_address
             self._api_key = user_input.get(CONF_API_KEY)
             self._name = user_input.get(CONF_NAME)
+            if not self._name:
+                self._name = DEFAULT_TV_NAME
+                self._use_default_name = True
+
             self._device_id = user_input.get(CONF_DEVICE_ID) if self._api_key else None
             self._mac = user_input.get(CONF_MAC, "")
-            # update_method = user_input.get(CONF_UPDATE_METHOD, "")
-            # if update_method:
-            #     self._update_method = update_method
-            # elif self._api_key:
-            #     self._update_method = UPDATE_METHODS["SmartThings"]
-            # else:
-            #     self._update_method = UPDATE_METHODS["Ping"]
+
+            use_ha_name = user_input.get(CONF_USE_HA_NAME, False)
+            if use_ha_name:
+                ha_conf = self.hass.config
+                if hasattr(ha_conf, "location_name"):
+                    self._ws_name = ha_conf.location_name
+            if not self._ws_name:
+                self._ws_name = self._name
+
             st_device_label = user_input.get(CONF_DEVICE_NAME, "")
             is_import = user_input.get(SOURCE_IMPORT, False)
 

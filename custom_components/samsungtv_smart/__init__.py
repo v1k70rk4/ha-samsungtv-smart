@@ -31,7 +31,6 @@ from homeassistant.const import (
 
 from .const import (
     DOMAIN,
-    DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_TIMEOUT,
     DEFAULT_UPDATE_METHOD,
@@ -48,6 +47,7 @@ from .const import (
     CONF_USE_MUTE_CHECK,
     CONF_SYNC_TURN_OFF,
     CONF_SYNC_TURN_ON,
+    CONF_WS_NAME,
     CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
     CONF_SCAN_APP_HTTP,
@@ -99,11 +99,12 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Schema(
                     {
                         vol.Required(CONF_HOST): cv.string,
-                        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+                        vol.Optional(CONF_NAME): cv.string,
                         vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
                         vol.Optional(CONF_API_KEY): cv.string,
                         vol.Optional(CONF_DEVICE_NAME): cv.string,
                         vol.Optional(CONF_DEVICE_ID): cv.string,
+                        vol.Optional(CONF_WS_NAME): cv.string,
                     }
                 ).extend(SAMSMART_SCHEMA),
             ],
@@ -121,10 +122,11 @@ def tv_url(host: str, address: str = "") -> str:
 
 
 class SamsungTVInfo:
-    def __init__(self, hass, hostname, name=""):
+    def __init__(self, hass, hostname, name, ws_name=None):
         self._hass = hass
         self._hostname = hostname
         self._name = name
+        self._ws_name = ws_name if ws_name else name
 
         self._uuid = None
         self._macaddress = None
@@ -168,7 +170,7 @@ class SamsungTVInfo:
                 with SamsungTVWS(
                     name=WS_PREFIX
                     + " "
-                    + self._name,  # this is the name shown in the TV list of external device.
+                    + self._ws_name,  # this is the name shown in the TV list of external device.
                     host=self._hostname,
                     port=port,
                     token_file=self._gen_token_file(port),
@@ -259,8 +261,6 @@ class SamsungTVInfo:
             self._uuid = device_id
         self._macaddress = device.get("wifiMac")
         self._device_name = device.get("name")
-        if not self._name:
-            self._name = self._device_name
         self._device_model = device.get("modelName")
         self._device_os = device.get("OS")
         self._token_support = device.get("TokenAuthSupport")
@@ -282,8 +282,6 @@ async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
                 hass.data[DOMAIN].setdefault(ip_address, {})[key] = entry_config.get(
                     key
                 )
-            if not entry_config.get(CONF_NAME):
-                entry_config[CONF_NAME] = DEFAULT_NAME
             entry_config[SOURCE_IMPORT] = True
             hass.async_create_task(
                 hass.config_entries.flow.async_init(

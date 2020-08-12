@@ -30,7 +30,6 @@ RESULT_ST_MULTI_DEVICES = "st_multiple_device"
 RESULT_SUCCESS = "success"
 RESULT_WRONG_APIKEY = "wrong_api_key"
 
-DEFAULT_NAME = "Samsung TV Remote"
 DEFAULT_PORT = 8001
 DEFAULT_TIMEOUT = 5
 DEFAULT_UPDATE_METHOD = UPDATE_METHODS["Ping"]
@@ -40,6 +39,7 @@ CONF_DEVICE_NAME = "device_name"
 CONF_DEVICE_MODEL = "device_model"
 CONF_SOURCE_LIST = "source_list"
 CONF_SHOW_CHANNEL_NR = "show_channel_number"
+CONF_WS_NAME = "ws_name"
 CONF_DEVICE_OS = "device_os"
 CONF_LOAD_ALL_APPS = "load_all_apps"
 CONF_POWER_ON_DELAY = "power_on_delay"

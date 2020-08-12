@@ -78,6 +78,7 @@ from .const import (
     CONF_USE_ST_STATUS_INFO,
     CONF_SYNC_TURN_OFF,
     CONF_SYNC_TURN_ON,
+    CONF_WS_NAME,
     STD_APP_LIST,
     WS_PREFIX,
     AppLoadMethod,
@@ -93,6 +94,9 @@ except ImportError:
     from homeassistant.components.media_player import MediaPlayerDevice as MediaPlayerEntity
 
 ATTR_ART_MODE_STATUS = "art_mode_status"
+ATTR_DEVICE_NAME = "device_name"
+ATTR_DEVICE_MODEL = "device_model"
+ATTR_IP_ADDRESS = "ip_address"
 
 KEYHOLD_MAX_DELAY = 5.0
 KEYPRESS_DEFAULT_DELAY = 0.5
@@ -235,10 +239,11 @@ class SamsungTVDevice(MediaPlayerEntity):
         if port == 8002:
             self._gen_token_file()
 
+        ws_name = config.get(CONF_WS_NAME, self._name)
         self._ws = SamsungTVWS(
             name=WS_PREFIX
             + " "
-            + self._name,  # this is the name shown in the TV list of external device.
+            + ws_name,  # this is the name shown in the TV list of external device.
             host=self._host,
             port=port,
             timeout=self._timeout,
@@ -1120,7 +1125,13 @@ class SamsungTVDevice(MediaPlayerEntity):
     @property
     def device_state_attributes(self):
         """Return the optional state attributes."""
-        data = {}
+        data = {
+            ATTR_IP_ADDRESS: self._host
+        }
+        if self._device_model:
+            data[ATTR_DEVICE_MODEL] = self._device_model
+        if self._device_name:
+            data[ATTR_DEVICE_NAME] = self._device_name
         if self._ws.artmode_status != ArtModeStatus.Unsupported:
             status_on = self._ws.artmode_status == ArtModeStatus.On
             data.update({
