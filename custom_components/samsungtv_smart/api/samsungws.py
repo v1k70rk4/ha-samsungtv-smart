@@ -459,19 +459,18 @@ class SamsungTVWS:
             #         app_id,
             #     )
             #     self._app_type[app_id] = 4
-            # elif app_type == 4:
-            #     _LOGGING.debug(
-            #         "App ID %s not found, excluded from check of running app",
-            #         app_id,
-            #     )
-            #     self._app_type[app_id] = 5
 
     def _get_app_status(self, app_id, app_type):
-        _LOGGING.debug("Get app status")
-        if app_type == 4:
-            method = "ms.webapplication.get"
-        else:
-            method = "ms.application.get"
+        _LOGGING.debug("Get app status: AppID: %s, AppType: %s", app_id, app_type)
+
+        # if app_type == 4:
+        #     method = "ms.webapplication.get"
+        # else:
+        #     method = "ms.application.get"
+
+        if app_type == 4:  # app type 4 always return not found error
+            return
+        method = "ms.application.get"
         self._ws_send(
             {
                 "id": app_id,
