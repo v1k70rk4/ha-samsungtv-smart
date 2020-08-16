@@ -678,8 +678,16 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         try:
             if command_type == "run_app":
-                # run_app(self, app_id, app_type='DEEP_LINK', meta_tag='')
                 self._ws.run_app(payload)
+            elif command_type == "run_app_remote":
+                app_cmd = payload.split(",")
+                app_id = app_cmd[0]
+                action_type = ""
+                if len(app_cmd) > 1:
+                    action_type = app_cmd[1]
+                self._ws.run_app(app_id, action_type, "", use_remote=True)
+            elif command_type == "open_browser":
+                self._ws.open_browser(payload)
             else:
                 hold_delay = 0
                 source_keys = payload.split(",")
@@ -1044,7 +1052,7 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         # Launch an app
         elif media_type == MEDIA_TYPE_APP:
-            await self.async_send_command(media_id, "run_app")
+            await self.async_send_command(media_id, "run_app_remote")
 
         # Send custom key
         elif media_type == MEDIA_TYPE_KEY:
@@ -1074,9 +1082,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._playing = True
 
         elif media_type == MEDIA_TYPE_BROWSER:
-            await self.hass.async_add_executor_job(
-                self._ws.open_browser, media_id
-            )
+            await self.async_send_command(media_id, "open_browser")
 
         else:
             _LOGGER.error("Unsupported media type")

@@ -51,6 +51,9 @@ WIN32_PING_MATCHER = re.compile(r"(?P<min>\d+)ms.+(?P<max>\d+)ms.+(?P<avg>\d+)ms
 
 MIN_APP_SCAN_INTERVAL = 10
 MAX_WS_PING_INTERVAL = 10
+TYPE_DEEP_LINK = "DEEP_LINK"
+TYPE_NATIVE_LAUNCH = "NATIVE_LAUNCH"
+
 _LOGGING = logging.getLogger(__name__)
 
 
@@ -157,6 +160,7 @@ class SamsungTVWS:
 
         self._installed_app = {}
         self._running_app = None
+        self._app_type = {}
         self._sync_lock = Lock()
         self._last_app_scan = datetime.min
         self._last_ping = datetime.min
@@ -402,6 +406,10 @@ class SamsungTVWS:
         if result:
             self._set_running_app(response)
             return
+        error = response.get("error")
+        if error:
+            self._manage_control_err(response)
+            return
         event = response.get("event")
         if not event:
             return
@@ -433,6 +441,30 @@ class SamsungTVWS:
         elif is_running:
             _LOGGING.debug("app running: %s", app_id)
             self._running_app = app_id
+
+    def _manage_control_err(self, response):
+        app_id = response.get("id")
+        if not app_id:
+            return
+        error_code = response.get("error", {}).get("code", 0)
+        if error_code == 404:  # Not found error
+            if self._installed_app:
+                if app_id not in self._installed_app:
+                    _LOGGING.error("App ID %s not found", app_id)
+                return
+            # app_type = self._app_type.get(app_id)
+            # if app_type is None:
+            #     _LOGGING.info(
+            #         "App ID %s with type DEEP_LINK not found, set as NATIVE_LAUNCH",
+            #         app_id,
+            #     )
+            #     self._app_type[app_id] = 4
+            # elif app_type == 4:
+            #     _LOGGING.debug(
+            #         "App ID %s not found, excluded from check of running app",
+            #         app_id,
+            #     )
+            #     self._app_type[app_id] = 5
 
     def _get_app_status(self, app_id, app_type):
         _LOGGING.debug("Get app status")
@@ -598,10 +630,13 @@ class SamsungTVWS:
         if self._app_list is not None:
             app_to_check = {}
             for app_name, app_id in self._app_list.items():
+                app = None
                 if self._installed_app:
                     app = self._installed_app.get(app_id)
                 else:
-                    app = App(app_id, app_name, 2)
+                    app_type = self._app_type.get(app_id, 2)
+                    if app_type <= 4:
+                        app = App(app_id, app_name, app_type)
                 if app:
                     app_to_check[app_id] = app
         else:
@@ -708,14 +743,17 @@ class SamsungTVWS:
             key_press_delay=0,
         )
 
-    def run_app(self, app_id, action_type="", meta_tag=""):
+    def run_app(self, app_id, action_type="", meta_tag="", *, use_remote=False):
 
         if not action_type:
             app = self._installed_app.get(app_id)
             if app:
-                action_type = "DEEP_LINK" if app.app_type == 2 else "NATIVE_LAUNCH"
+                app_type = app.app_type
             else:
-                action_type = "DEEP_LINK"
+                app_type = self._app_type.get(app_id, 2)
+            action_type = TYPE_DEEP_LINK if app_type == 2 else TYPE_NATIVE_LAUNCH
+        elif action_type != TYPE_NATIVE_LAUNCH:
+            action_type = TYPE_DEEP_LINK
 
         _LOGGING.debug(
             "Sending run app app_id: %s app_type: %s meta_tag: %s",
@@ -724,7 +762,7 @@ class SamsungTVWS:
             meta_tag,
         )
 
-        if self._ws_control and action_type == "DEEP_LINK":
+        if self._ws_control and action_type == TYPE_DEEP_LINK and not use_remote:
             self._ws_send(
                 {
                     "id": app_id,
@@ -757,7 +795,7 @@ class SamsungTVWS:
 
     def open_browser(self, url):
         _LOGGING.debug("Opening url in browser %s", url)
-        self.run_app("org.tizen.browser", "NATIVE_LAUNCH", url)
+        self.run_app("org.tizen.browser", TYPE_NATIVE_LAUNCH, url)
 
     def rest_device_info(self):
         _LOGGING.debug("Get device info via rest api")
