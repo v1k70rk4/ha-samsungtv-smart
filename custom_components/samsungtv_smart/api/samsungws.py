@@ -290,6 +290,24 @@ class SamsungTVWS:
                 "Failed to parse response from TV. Maybe feature not supported on this model"
             )
 
+    def _check_conn_id(self, resp_data):
+        if not resp_data:
+            return False
+
+        msg_id = resp_data.get("id")
+        if not msg_id:
+            return False
+
+        clients_info = resp_data.get("clients")
+        for client in clients_info:
+            device_name = client.get("deviceName")
+            if device_name:
+                if device_name == self._serialize_string(self.name):
+                    conn_id = client.get("id", "")
+                    if conn_id == msg_id:
+                        return True
+        return False
+
     def _client_remote_thread(self):
         if self._ws_remote:
             return
@@ -341,9 +359,12 @@ class SamsungTVWS:
         self._last_ping = datetime.now()
 
         if event == "ms.channel.connect":
+            conn_data = response.get("data")
+            if not self._check_conn_id(conn_data):
+                return
             _LOGGING.debug("Message remote: received connect")
-            if response.get("data") and response.get("data").get("token"):
-                token = response.get("data").get("token")
+            token = conn_data.get("token")
+            if token:
                 _LOGGING.debug("Got token %s", token)
                 self._set_token(token)
             self._is_connected = True
@@ -414,6 +435,9 @@ class SamsungTVWS:
         if not event:
             return
         if event == "ms.channel.connect":
+            conn_data = response.get("data")
+            if not self._check_conn_id(conn_data):
+                return
             _LOGGING.debug("Message control: received connect")
             self.get_running_app()
 
@@ -511,6 +535,9 @@ class SamsungTVWS:
         if not event:
             return
         if event == "ms.channel.connect":
+            conn_data = response.get("data")
+            if not self._check_conn_id(conn_data):
+                return
             _LOGGING.debug("Message art: received connect")
             self._client_art_supported = 1
         elif event == "ms.channel.ready":
@@ -688,14 +715,25 @@ class SamsungTVWS:
 
         _LOGGING.debug("WS url %s", url)
         connection = websocket.create_connection(url, self.timeout, sslopt=sslopt)
+        completed = False
+        response = ""
 
-        response = self._process_api_response(connection.recv())
-        if response["event"] == "ms.channel.connect":
-            if response.get("data") and response.get("data").get("token"):
-                token = response.get("data").get("token")
-                _LOGGING.debug("Got token %s", token)
-                self._set_token(token)
-        else:
+        for iteration in range(3):
+            response = self._process_api_response(connection.recv())
+            _LOGGING.debug(response)
+            if response.get("event", "") == "ms.channel.connect":
+                conn_data = response.get("data")
+                if self._check_conn_id(conn_data):
+                    completed = True
+                    token = conn_data.get("token")
+                    if token:
+                        _LOGGING.debug("Got token %s", token)
+                        self._set_token(token)
+                    break
+            else:
+                break
+
+        if not completed:
             self.close()
             raise exceptions.ConnectionFailure(response)
 
@@ -705,9 +743,8 @@ class SamsungTVWS:
     def close(self):
         if self.connection:
             self.connection.close()
+            _LOGGING.debug("Connection closed.")
         self.connection = None
-
-        _LOGGING.debug("Connection closed.")
 
     def send_key(self, key, key_press_delay=None, cmd="Click"):
         _LOGGING.debug("Sending key %s", key)

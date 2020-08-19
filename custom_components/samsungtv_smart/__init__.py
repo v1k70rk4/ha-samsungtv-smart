@@ -150,7 +150,7 @@ class SamsungTVInfo:
         if os.path.isfile(token_file) is False:
             # Create token file for catch possible errors
             try:
-                handle = open(token_file, "w+")
+                handle = open(token_file, "w+", closefd=True)
                 handle.close()
             except:
                 _LOGGER.error(
