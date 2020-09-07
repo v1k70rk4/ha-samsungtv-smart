@@ -250,10 +250,19 @@ class SamsungTVWS:
         elif ws_socket:
             connection = ws_socket
         else:
+            self.start_client(start_all=True)
             return
 
         payload = json.dumps(command)
-        connection.send(payload)
+        try:
+            connection.send(payload)
+        except websocket.WebSocketConnectionClosedException:
+            _LOGGING.warning("_ws_send: connection is closed, send command failed")
+            if using_remote or use_control:
+                _LOGGING.info("_ws_send: try to restart communication threads")
+                self.start_client(start_all=use_control)
+            return
+
         if using_remote:
             # we consider a message sent valid as a ping
             self._last_ping = datetime.now()
@@ -679,6 +688,8 @@ class SamsungTVWS:
             self._client_remote.name = "SamsungRemote"
             self._client_remote.setDaemon(True)
             self._client_remote.start()
+
+            return
 
         if start_all:
             if self._client_control is None or not self._client_control.is_alive():
