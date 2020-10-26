@@ -128,8 +128,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-MEDIA_IMAGE_BASE_URL_COLOR = "https://jaruba.github.io/channel-logos/fff"
-MEDIA_IMAGE_BASE_URL_DARK = "https://jaruba.github.io/channel-logos/212c39"
+MEDIA_IMAGE_BASE_URL_COLOR = "https://jaruba.github.io/channel-logos/export/fff-color"
+MEDIA_IMAGE_BASE_URL_DARK = "https://jaruba.github.io/channel-logos/export/212c39-white"
 MEDIA_FILE_IMAGE_TO_PATH = os.path.dirname(os.path.realpath(__file__)) + '/logo_paths.json'
 MEDIA_IMAGE_MIN_SCORE_REQUIRED = 80
 MEDIA_TITLE_KEYWORD_REMOVAL = ['HD']
