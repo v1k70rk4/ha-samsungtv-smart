@@ -62,7 +62,7 @@ _LOGGER = logging.getLogger(__name__)
 CONF_SHOW_CHANNEL_NR = "show_channel_number"
 
 DEFAULT_NAME = "Samsung TV Remote"
-DEFAULT_PORT = 8001
+DEFAULT_PORT = 8002
 DEFAULT_TIMEOUT = 3
 DEFAULT_KEY_CHAIN_DELAY = 1.25
 DEFAULT_UPDATE_METHOD = "ping"
