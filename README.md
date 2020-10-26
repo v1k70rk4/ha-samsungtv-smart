@@ -141,6 +141,13 @@ Edit it by adding the following lines:
     Default value: "255.255.255.255"<br/>
     Example value: "192.168.1.255"<br/>
 
+    **show_logos:**<br/>
+    (string)(Optional)<br/>
+    The background color and channel / service logo preference to use, the background color can be "transparent" or the HEX color code, logo preference can be "color" or "white", example: "transparent-color" (transparent background, colored logo)<br/>
+    Supported values: "05a9f4-color", "05a9f4-white", "212c39-white", "fff-color", "transparent-color", "transparent-white"<br/>
+    Default value: "fff-color" (white background, colored logo)<br/>
+   
+
 2. Reboot Home Assistant
 3. Congrats! You're all set!
 
