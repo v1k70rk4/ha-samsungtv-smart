@@ -97,18 +97,18 @@ Edit it by adding the following lines:
     (boolean)(Optional)
     This option is `False` by default. The "Frame" model of Samsung TVs have an Art Mode feature, if this option is set to `True` the component will hold the power key for 3 seconds to turn off this TV model (instead of pressing normally which would go to Art Mode)
 
+    **show_logos:**
+    (string)(Optional)
+    The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color)
+    Supported values: "white-color", "dark-white", "blue-color", "blue-white", "transparent-color", "transparent-white"
+    Default value: "white-color" (background: white, logo: color)
+   
     **broadcast_address:**
     (string)(Optional)
     **Do not set this option if you do not know what it does, it can break turning your TV on.**
     The ip address of the host to send the magic packet (for wakeonlan) to if the "mac" property is also set.
     Default value: "255.255.255.255"
     Example value: "192.168.1.255"
-
-    **show_logos:**<br/>
-    (string)(Optional)<br/>
-    The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color)<br/>
-    Supported values: "blue-color", "blue-white", "dark-white", "white-color", "transparent-color", "transparent-white"<br/>
-    Default value: "white-color" (background: white, logo: color)<br/>
 
 
 2. Reboot Home Assistant
