@@ -128,8 +128,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-MEDIA_IMAGE_BASE_URL_COLOR = "https://jaruba.github.io/channel-logos/export/fff-color"
-MEDIA_IMAGE_BASE_URL_DARK = "https://jaruba.github.io/channel-logos/export/212c39-white"
+MEDIA_IMAGE_OPTIONS = ['05a9f4-color', '05a9f4-white', '212c39-white', 'fff-color', 'transparent-color', 'transparent-white']
 MEDIA_FILE_IMAGE_TO_PATH = os.path.dirname(os.path.realpath(__file__)) + '/logo_paths.json'
 MEDIA_IMAGE_MIN_SCORE_REQUIRED = 80
 MEDIA_TITLE_KEYWORD_REMOVAL = ['HD']
@@ -269,10 +268,11 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._media_title = None
         self._media_image_url = None
         self._media_image_base_url = None
-        if show_logos == "color":
-            self._media_image_base_url = MEDIA_IMAGE_BASE_URL_COLOR
-        elif show_logos == "dark":
-            self._media_image_base_url = MEDIA_IMAGE_BASE_URL_DARK
+
+        if show_logos in MEDIA_IMAGE_OPTIONS:
+            self._media_image_base_url = "https://jaruba.github.io/channel-logos/export/{}".format(MEDIA_IMAGE_OPTIONS[show_logos])
+        else:
+            self._media_image_base_url = "https://jaruba.github.io/channel-logos/export/fff-color"
 
     def _split_app_list(self, app_list, sep = "/"):
         retval = {"app": {}, "appST": {}}
