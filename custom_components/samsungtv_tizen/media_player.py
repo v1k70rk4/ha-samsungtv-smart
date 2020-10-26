@@ -128,7 +128,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-MEDIA_IMAGE_OPTIONS = ['05a9f4-color', '05a9f4-white', '212c39-white', 'fff-color', 'transparent-color', 'transparent-white']
+MEDIA_IMAGE_OPTIONS = {'blue-color': '05a9f4-color', 'blue-white': '05a9f4-white', 'dark-white': '212c39-white', 'white-color': 'fff-color', 'transparent-color': 'transparent-color', 'transparent-white': 'transparent-white'}
 MEDIA_FILE_IMAGE_TO_PATH = os.path.dirname(os.path.realpath(__file__)) + '/logo_paths.json'
 MEDIA_IMAGE_MIN_SCORE_REQUIRED = 80
 MEDIA_TITLE_KEYWORD_REMOVAL = ['HD']
