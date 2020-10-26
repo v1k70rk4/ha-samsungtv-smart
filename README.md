@@ -65,7 +65,6 @@ Edit it by adding the following lines:
     media_player:
       - platform: samsungtv_tizen
         host: IP_ADDRESS
-        port: 8002
         mac: MAC_ADDRESS
     ```
     **Note**: This is the same as the configuration for the built-in [Samsung Smart TV](https://www.home-assistant.io/integrations/samsungtv/) component.
