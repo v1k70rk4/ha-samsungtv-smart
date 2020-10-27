@@ -98,8 +98,8 @@ Edit it by adding the following lines:
 
     **show_logos:**
     (string)(Optional)
-    The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color)
-    Supported values: "white-color", "dark-white", "blue-color", "blue-white", "transparent-color", "transparent-white"
+    The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color). "none" to disable.
+    Supported values: "none", "white-color", "dark-white", "blue-color", "blue-white", "transparent-color", "transparent-white"
     Default value: "white-color" (background: white, logo: color)
    
     **broadcast_address:**
