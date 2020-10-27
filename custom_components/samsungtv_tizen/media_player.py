@@ -124,11 +124,11 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_BROADCAST_ADDRESS): cv.string,
         vol.Optional(CONF_SCAN_APP_HTTP, default=True): cv.boolean,
         vol.Optional(CONF_IS_FRAME_TV, default=False): cv.boolean,
-        vol.Optional(CONF_SHOW_LOGOS, default="none"): cv.string
+        vol.Optional(CONF_SHOW_LOGOS, default="white-color"): cv.string
     }
 )
 
-MEDIA_IMAGE_OPTIONS = {'blue-color': '05a9f4-color', 'blue-white': '05a9f4-white', 'dark-white': '212c39-white', 'white-color': 'fff-color', 'transparent-color': 'transparent-color', 'transparent-white': 'transparent-white'}
+MEDIA_IMAGE_OPTIONS = {'none': 'none', 'blue-color': '05a9f4-color', 'blue-white': '05a9f4-white', 'dark-white': '212c39-white', 'white-color': 'fff-color', 'transparent-color': 'transparent-color', 'transparent-white': 'transparent-white'}
 MEDIA_FILE_IMAGE_TO_PATH = os.path.dirname(os.path.realpath(__file__)) + '/logo_paths.json'
 MEDIA_IMAGE_MIN_SCORE_REQUIRED = 80
 MEDIA_TITLE_KEYWORD_REMOVAL = ['HD']
@@ -270,8 +270,12 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._media_image_base_url = None
 
         if show_logos in MEDIA_IMAGE_OPTIONS:
-            self._media_image_base_url = "https://jaruba.github.io/channel-logos/export/{}".format(MEDIA_IMAGE_OPTIONS[show_logos])
+            if MEDIA_IMAGE_OPTIONS[show_logos] == "none":
+                self._media_image_base_url = None
+            else:
+                self._media_image_base_url = "https://jaruba.github.io/channel-logos/export/{}".format(MEDIA_IMAGE_OPTIONS[show_logos])
         else:
+            _LOGGER.warning("Unrecognized value '%s' for 'show_logos' option (%s). Using default value.",show_logos,self._name)
             self._media_image_base_url = "https://jaruba.github.io/channel-logos/export/fff-color"
 
     def _split_app_list(self, app_list, sep = "/"):
@@ -419,6 +423,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._state == STATE_OFF:
             self._end_of_power_off = None 
 
+        self.hass.async_add_job(self._update_media_data)
 
     def _get_source(self):
         """Return the current input source."""
@@ -557,6 +562,14 @@ class SamsungTVDevice(MediaPlayerEntity):
     @property
     def media_title(self):
         """Title of current playing media."""
+        return self._media_title
+
+    @property
+    def media_image_url(self):
+        """Return the media image URL."""
+        return self._media_image_url
+
+    async def _update_media_data(self):
         if self._state == STATE_OFF and self._update_method != "smartthings":
             self._media_title = None
         if self._api_key and self._device_id and hasattr(self, '_cloud_state'):
@@ -573,46 +586,35 @@ class SamsungTVDevice(MediaPlayerEntity):
                         new_media_title = new_media_title + " (" + self._cloud_channel + ")"
                 else:
                     new_media_title = search_media_title = self._get_source()
-                _LOGGER.debug("Old title %s - new title %s",self._media_title,new_media_title)
                 #only match new image if title actually changed and logos are enabled
                 if self._media_title != new_media_title and self._media_image_base_url is not None:
                     if new_media_title not in ["TV","HDMI","TV/HDMI"]:
                         _LOGGER.debug("Matching title to image %s",search_media_title)
-                        self._match_title_to_image(search_media_title)
+                        await self._match_title_to_image(search_media_title)
                     else:
                         self._media_image_url = None
                 self._media_title = new_media_title
         else:
             new_media_title = self._get_source()
-            _LOGGER.debug("Old title %s - new title %s",self._media_title,new_media_title)
             #only match new image if title actually changed and logos are enabled
             if self._media_title != new_media_title and self._media_image_base_url is not None:
                 if new_media_title not in ["TV","HDMI","TV/HDMI"] and new_media_title is not None:
                     _LOGGER.debug("Matching title to image %s",new_media_title)
-                    self._match_title_to_image(new_media_title)
+                    await self._match_title_to_image(new_media_title)
                 else:
                     self._media_image_url = None
             self._media_title = new_media_title
-        return self._media_title
 
-    @property
-    def media_image_url(self):
-        """Return the media image URL."""
-        _LOGGER.debug(self._media_image_url)
-        return self._media_image_url
-
-    def _match_title_to_image(self, media_title):
+    async def _match_title_to_image(self, media_title):
         if media_title is not None:
             for word in MEDIA_TITLE_KEYWORD_REMOVAL:
                 media_title = media_title.lower().replace(word.lower(),'')
-            _LOGGER.debug("Loading json paths file... %s", MEDIA_FILE_IMAGE_TO_PATH)
             media_title = media_title.lower().strip()
             try:
                 with open(MEDIA_FILE_IMAGE_TO_PATH, 'r') as f:
                     image_paths = iter(json.load(f).items())
             except:
                 self._media_image_url = None
-            _LOGGER.debug("Json paths file loaded.")
             
             best_match = {"ratio": None, "title": None, "path": None}
             while True:
