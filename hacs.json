@@ -1,3 +1,4 @@
 {
-  "name": "SamsungTV Tizen"
+  "name": "SamsungTV Tizen",
+  "domains": ["media-player"]
 }
