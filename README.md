@@ -26,7 +26,8 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
-
+![N|Solid](https://i.imgur.com/2dVt9aO.png)
+![N|Solid](https://i.imgur.com/tPnv4C9.png)
 
 # Installation
 
