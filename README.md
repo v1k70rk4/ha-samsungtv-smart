@@ -19,7 +19,10 @@ This is a custom component to allow control of SamsungTV devices in [HomeAssista
 * Extended volume control
 * Ability to customize source list at media player dropdown list including TV, HDMI sources, apps and specific tv channels
 * Cast video URLs to Samsung TV
+* Open browser pages on a Samsung TV
+* Supports Samsung Frame TVs
 * Connect to SmartThings Cloud API for additional features: see TV channel names, see which HDMI source is selected, more key codes to change input source
+* Display logos of TV channels (requires Smartthings enabled) and apps
 
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
@@ -138,6 +141,7 @@ Edit it by adding the following lines:
     The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color). "none" to disable.<br/>
     Supported values: "none", "white-color", "dark-white", "blue-color", "blue-white", "darkblue-white", "transparent-color", "transparent-white"<br/>
     Default value: "white-color" (background: white, logo: color)<br/>
+    Notice that your logo is missing or outdated? Check our guide [here](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Logos.md) for updating this information.
    
     **broadcast_address:**<br/>
     (string)(Optional)<br/>
