@@ -132,6 +132,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 MEDIA_IMAGE_OPTIONS = {'none': 'none', 'bluecolor': '05a9f4-color', 'blue-white': '05a9f4-white', 'dark-white': '282c34-white', 'darkblue-white': '212c39-white', 'white-color': 'fff-color', 'transparent-color': 'transparent-color', 'transparent-white': 'transparent-white'}
 MEDIA_IMAGE_BASE_URL = 'https://jaruba.github.io/channel-logos/'
 MEDIA_FILE_IMAGE_TO_PATH = os.path.dirname(os.path.realpath(__file__)) + '/logo_paths.json'
+MEDIA_FILE_IMAGE_TO_PATH_DOWNLOAD = os.path.dirname(os.path.realpath(__file__)) + '/logo_paths_download.json'
 MEDIA_FILE_DAYS_BEFORE_UPDATE = 1
 MEDIA_IMAGE_MIN_SCORE_REQUIRED = 80
 MEDIA_TITLE_KEYWORD_REMOVAL = ['HD']
@@ -427,7 +428,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._state == STATE_OFF:
             self._end_of_power_off = None 
 
-        if self._last_paths_file_check is None or self._last_paths_file_check < (datetime.now().astimezone()-timedelta(days=MEDIA_FILE_DAYS_BEFORE_UPDATE)):
+        if self._media_image_base_url is not None and self._last_paths_file_check is None or self._last_paths_file_check < (datetime.now().astimezone()-timedelta(days=MEDIA_FILE_DAYS_BEFORE_UPDATE)):
             self._ensure_latest_path_file()
             self._last_paths_file_check = datetime.now().astimezone()
 
@@ -618,8 +619,8 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     def _ensure_latest_path_file(self):
         ''' Does check if paths files exists and if it does - is it out of date or not'''
-        if os.path.isfile(MEDIA_FILE_IMAGE_TO_PATH):
-            file_date = datetime.utcfromtimestamp(os.path.getmtime(MEDIA_FILE_IMAGE_TO_PATH)).astimezone()
+        if os.path.isfile(MEDIA_FILE_IMAGE_TO_PATH_DOWNLOAD):
+            file_date = datetime.utcfromtimestamp(os.path.getmtime(MEDIA_FILE_IMAGE_TO_PATH_DOWNLOAD)).astimezone()
             if file_date < (datetime.now().astimezone()-timedelta(days=MEDIA_FILE_DAYS_BEFORE_UPDATE)):
                 try:
                     response = requests.head(MEDIA_IMAGE_BASE_URL + "logo_paths.json")
@@ -627,7 +628,7 @@ class SamsungTVDevice(MediaPlayerEntity):
                     if url_date > file_date:
                         self._download_latest_path_file()
                 except:
-                    _LOGGER.warning("Not able to update paths file for logos. No logos might be shown.")
+                    _LOGGER.warning("Not able to fetch paths file for logos. Using possibly out-of-date paths file.")
         else:
             self._download_latest_path_file()
 
@@ -636,10 +637,10 @@ class SamsungTVDevice(MediaPlayerEntity):
         try:
             response = requests.get(MEDIA_IMAGE_BASE_URL + "logo_paths.json")
             if response.text:
-                with open(MEDIA_FILE_IMAGE_TO_PATH, mode='w+',encoding='utf-8') as paths_file:
+                with open(MEDIA_FILE_IMAGE_TO_PATH_DOWNLOAD, mode='w+',encoding='utf-8') as paths_file:
                     paths_file.write(response.text)
         except:
-            _LOGGER.warning("Not able to update paths file for logos. No logos might be shown.")
+            _LOGGER.warning("Not able to update paths file for logos. Using possibly out-of-date paths file.")
 
 
     async def _match_title_to_image(self, media_title):
@@ -648,8 +649,12 @@ class SamsungTVDevice(MediaPlayerEntity):
                 media_title = media_title.lower().replace(word.lower(),'')
             media_title = media_title.lower().strip()
             try:
-                with open(MEDIA_FILE_IMAGE_TO_PATH, 'r') as f:
-                    image_paths = iter(json.load(f).items())
+                if os.path.isfile(MEDIA_FILE_IMAGE_TO_PATH_DOWNLOAD):
+                    with open(MEDIA_FILE_IMAGE_TO_PATH_DOWNLOAD, 'r') as f:
+                        image_paths = iter(json.load(f).items())
+                elif os.path.isfile(MEDIA_FILE_IMAGE_TO_PATH):                     
+                    with open(MEDIA_FILE_IMAGE_TO_PATH, 'r') as f:
+                        image_paths = iter(json.load(f).items())
                 best_match = {"ratio": None, "title": None, "path": None}
                 while True:
                     try:
