@@ -922,9 +922,9 @@ class SamsungTVDevice(MediaPlayerEntity):
                             last_was_delay = False
                             self.hass.async_add_job(self.send_command, this_key)
             elif source_key.startswith("ST_"):
-                await self.hass.async_add_job(self._smartthings_keys, source_key)
+                self.hass.async_add_job(self._smartthings_keys, source_key)
             else:
-                await self.hass.async_add_job(self.send_command, source_key)
+                self.hass.async_add_job(self.send_command, source_key)
         # Play media
         elif media_type == MEDIA_TYPE_URL:
             try:
