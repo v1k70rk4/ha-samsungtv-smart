@@ -35,6 +35,10 @@ Edit it by adding the following lines:
 
     ### Custom configuration variables
 
+    **name:**
+    (string)(Optional)
+    A name for your TV, this will also be used for the entity ID
+
     **update_method:**
     (string)(Optional)
     This change the ping method used for state update. Values: "ping", "websockets" and "smartthings"
