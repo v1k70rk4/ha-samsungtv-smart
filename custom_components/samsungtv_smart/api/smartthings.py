@@ -327,7 +327,7 @@ class SmartThingsTV:
         device_volume = dev_data.get("volume", {}).get("value", 0)
         device_muted = dev_data.get("mute", {}).get("value", "")
         device_all_sources = json.loads(
-            dev_data.get("supportedInputSources", {}).get("value", {})
+            dev_data.get("supportedInputSources", {}).get("value", "{}")
         )
         device_source = dev_data.get("inputSource", {}).get("value", "")
         device_tv_chan = dev_data.get("tvChannel", {}).get("value", "")
