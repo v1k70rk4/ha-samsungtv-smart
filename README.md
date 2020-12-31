@@ -94,18 +94,8 @@ access token (if created) and then click 'Submit'
 
 ### Option B: Configuration via editing `configuration.yaml`
 
-1. Enable the component by editing the configuration.yaml file (within the config directory as well). Edit it by adding 
-the following lines:
-    ```
-    samsungtv_smart:
-      - host: <YOUR TV IP ADDRES>
-        name: My TV name
-        api_key: <YOUR SMARTTHINGS TOKEN> #omit if not generated
-        ...
-    ```
-2. Restart Home Assistant.
-3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
-4. Congrats! You're all set!
+**From v0.3.16 initial configuration from yaml is not allowed.**<br>
+You can still use `configuration.yaml` to set the additional parameter as explained below.
 
 ## Configuration options
 
@@ -115,10 +105,15 @@ Here you chan change the following options:
 
 - **Applications list load mode at startup**<br/>
 Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
-This option determine the mode in witch application list is automatic generated if a custom `app_list` is not defined 
-in configuration file.<br/>
-With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` a list will be generated 
-limited to few application (the most common), with `Not Load` application list will be empty.<br/>
+This option determine the mode application list is automatic generated.<br>
+With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` will be generated a minimal list  
+with only the most common application, with `Not Load` application list will be empty.<br/>
+**Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
+
+- **Applications launch method used**<br/>
+Possible values: `Standard Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
+This option determine the mode used to launch applications.<br/>
+Use `Rest API Call` only if the other 2 methods do not work.<br/>
 
 - **Use SmartThings TV Status information**<br/>
 (default = True)<br/>
@@ -131,6 +126,12 @@ When enabled and SmartThings is configured, the component will try to retrieve f
 about the TV Channel and TV Channel Name or the Running App<br/>
 **Note: in some case this information is not properly updated, disabled it you have incorrect information.**<br/>
 
+- **Use SmartThings TV Channels number information**<br/>
+(default = False)<br/>
+If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media 
+titles, by setting this to True the TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
+**Note: not always SmartThings provide the information for channel_name and channel_number.**<br/>
+    
 - **Use volume mute status to detect fake power ON**<br/>
 (default = True)<br/>
 When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
@@ -164,37 +165,6 @@ samsungtv_smart:
 ```
 Then you can add any of the following parameters:<br/>
 
-- **api_key:**<br/>
-(string)(Optional)<br/>
-API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, 
-and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))<br/>
-Read [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md)<br/>
-This parameter can also be provided during the component configuration using the user interface.<br/>
-**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must delete the integration from UI.**<br/>
-
-- **device_id:**<br/>
-(string)(Optional)<br/>
-Device ID for the SmartThings Cloud API. This is optional, to be used only if component fails to automatically determinate it.
-Read [SmartThings Device ID](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-device-id)
-to understand how identify the correct value to use.<br/>
-This parameter will be requested during component configuration from user interface when required.<br/>
-**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to 
-change the value after that the component is configured. To change the value you must delete the integration from UI.**<br/>
-
-- **device_name:**<br/>
-(string)(Optional)<br/>
-This is an optional value, used only to identify the TV in SmartThings during initial configuration if you have more TV 
-registered. You should  configure this parameter only if the setup fails in the detection.<br/>
-The device_name to use can be read using the SmartThings app<br/>
-**Note: this parameter is used only during initial configuration.**<br/>
-
-- **mac:**<br/>
-(string)(Optional)<br/>
-This is an optional value, normally is automatically detected during setup phase and so is not required to specify it. 
-You should try to configure this parameter only if the setup fail in the detection.<br/>
-The mac-address is used to turn on the TV. If you set it manually, you must find the right value from the TV Menu or 
-from your network router.<br/>
-
 - **source_list:**<br/>
 (json)(Optional)<br/>
 This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
@@ -220,12 +190,13 @@ Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify":
 Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), 
 [List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
 
-- **show_channel_number:**<br/>
-(boolean)(Optional)<br/>
-If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media 
-titles, by setting this to True the TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
-**Note: not always SmartThings provide the information for channel_name and channel_number.**<br/>
-    
+- **mac:**<br/>
+(string)(Optional)<br/>
+This is an optional value, normally is automatically detected during setup phase and so is not required to specify it. 
+You should try to configure this parameter only if the setup fail in the detection.<br/>
+The mac-address is used to turn on the TV. If you set it manually, you must find the right value from the TV Menu or 
+from your network router.<br/>
+
 - **broadcast_address:**<br/>
 (string)(Optional)<br/>
 **Do not set this option if you do not know what it does, it can break turning your TV on.**<br/>
@@ -234,6 +205,36 @@ Default value: "255.255.255.255"<br/>
 Example value: "192.168.1.255"<br/>
 
 ### Deprecated configuration parameters
+
+- **api_key:**<br/>
+(string)(Optional) (obsolete/not used from v0.3.16 - configuration from yaml is not allowed)<br/>
+API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, 
+and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))<br/>
+Read [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md)<br/>
+This parameter can also be provided during the component configuration using the user interface.<br/>
+**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to change the value after that the component is configured. To change the value you must delete the integration from UI.**<br/>
+
+- **device_id:**<br/>
+(string)(Optional) (obsolete/not used from v0.3.16 - configuration from yaml is not allowed)<br/>
+Device ID for the SmartThings Cloud API. This is optional, to be used only if component fails to automatically determinate it.
+Read [SmartThings Device ID](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-device-id)
+to understand how identify the correct value to use.<br/>
+This parameter will be requested during component configuration from user interface when required.<br/>
+**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to 
+change the value after that the component is configured. To change the value you must delete the integration from UI.**<br/>
+
+- **device_name:** (obsolete/not used from v0.3.16 - configuration from yaml is not allowed)<br/>
+(string)(Optional)<br/>
+This is an optional value, used only to identify the TV in SmartThings during initial configuration if you have more TV 
+registered. You should  configure this parameter only if the setup fails in the detection.<br/>
+The device_name to use can be read using the SmartThings app<br/>
+**Note: this parameter is used only during initial configuration.**<br/>
+
+- **show_channel_number:** (obsolete/not used from v0.3.16 and replaced by Configuration options)<br/>
+(boolean)(Optional)<br/>
+If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media 
+titles, by setting this to True the TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
+**Note: not always SmartThings provide the information for channel_name and channel_number.**<br/>
 
 - **load_all_apps:** (obsolete/not used from v0.3.4 and replaced by Configuration options)<br/>
 (boolean)(Optional)<br/>

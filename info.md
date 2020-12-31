@@ -57,18 +57,8 @@ access token (if created) and then click 'Submit'
 
 ### Option B: Configuration via editing `configuration.yaml`
 
-1. Enable the component by editing the configuration.yaml file (within the config directory as well). Edit it by adding 
-the following lines:
-    ```
-    samsungtv_smart:
-      - host: <YOUR TV IP ADDRES>
-        name: My TV name
-        api_key: <YOUR SMARTTHINGS TOKEN> #omit if not generated
-        ...
-    ```
-2. Restart Home Assistant.
-3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
-4. Congrats! You're all set!
+**From v0.3.16 initial configuration from yaml is not allowed.**
+You can still use `configuration.yaml` to set the additional parameter as explained below.
 
 ## Configuration options
 
@@ -78,10 +68,15 @@ Here you chan change the following options:
 
 - **Applications list load mode at startup**<br/>
 Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
-This option determine the mode in witch application list is automatic generated if a custom `app_list` is not defined 
-in configuration file.<br/>
-With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` a list will be generated 
-limited to few application (the most common), with `Not Load` application list will be empty.<br/>
+This option determine the mode application list is automatic generated.<br>
+With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` will be generated a minimal list  
+with only the most common application, with `Not Load` application list will be empty.<br/>
+**Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
+
+- **Applications launch method used**<br/>
+Possible values: `Standard Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
+This option determine the mode used to launch applications.<br/>
+Use `Rest API Call` only if the other 2 methods do not work.<br/>
 
 - **Use SmartThings TV Status information**<br/>
 (default = True)<br/>
@@ -93,6 +88,12 @@ about the TV Status. This information is always used in conjunction with local p
 When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
 about the TV Channel and TV Channel Name or the Running App<br/>
 **Note: in some case this information is not properly updated, disabled it you have incorrect information.**<br/>
+
+- **Use SmartThings TV Channels number information**<br/>
+(default = False)<br/>
+If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media 
+titles, by setting this to True the TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
+**Note: not always SmartThings provide the information for channel_name and channel_number.**<br/>
 
 - **Use volume mute status to detect fake power ON**<br/>
 (default = True)<br/>
