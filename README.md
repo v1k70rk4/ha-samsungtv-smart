@@ -195,7 +195,7 @@ Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify":
 Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), 
 [List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
 
-**channel_list:**<br/>
+- **channel_list:**<br/>
 (json)(Optional)<br/>
 This contains the tv CHANNELS visible sources in the dropdown list in media player UI. To guarantee performance keep the list small, 
 recommended maximum 30 channels.<br/>
