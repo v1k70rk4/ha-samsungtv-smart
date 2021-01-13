@@ -105,6 +105,11 @@ TV is powered on the volume is always unmuted.<br/>
 This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
 ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
 
+- **Number of time WOL packet is sent to turn on TV**<br/>
+(default = 1, range from 1 to 20)<br/>
+This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
+until the TV properly turn-on.<br/>
+  
 - **List of entity to Power OFF with TV (comma separated)**<br/>
 A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). 
 This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>

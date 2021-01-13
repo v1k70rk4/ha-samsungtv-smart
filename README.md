@@ -142,6 +142,11 @@ TV is powered on the volume is always unmuted.<br/>
 This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
 ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
 
+- **Number of time WOL packet is sent to turn on TV**<br/>
+(default = 1, range from 1 to 20)<br/>
+This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
+until the TV properly turn-on.<br/>
+
 - **List of entity to Power OFF with TV (comma separated)**<br/>
 A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). 
 This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>
@@ -189,6 +194,14 @@ list of all available applications. This list can be used to create a manual lis
 Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'<br/>
 Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), 
 [List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
+
+**channel_list:**<br/>
+(json)(Optional)<br/>
+This contains the tv CHANNELS visible sources in the dropdown list in media player UI. To guarantee performance keep the list small, 
+recommended maximum 30 channels.<br/>
+Example value: '{"MTV": "14", "Eurosport": "20", "TLC": "21"}'<br/>
+You can also specify the source that must be used for every channel. The source must be one of the defined in the `source_list`<br/>
+Example value: '{"MTV": "14@TV", "Eurosport": "20@TV", "TLC": "21@HDMI"}'<br/>
 
 - **mac:**<br/>
 (string)(Optional)<br/>
