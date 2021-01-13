@@ -12,12 +12,12 @@ import requests
 import time
 import numpy as np
 
-from .websockets import SamsungTVWS
-from . import exceptions
+from .api.samsungws import SamsungTVWS
+from .api import exceptions
 
-from .smartthings import smartthingstv as smartthings
+from .api.smartthings import smartthingstv as smartthings
 
-from .upnp import upnp
+from .api.upnp import upnp
 
 from homeassistant import util
 try:
