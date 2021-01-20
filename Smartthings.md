@@ -9,9 +9,13 @@ Step 1: Make sure your TV is logged into your smart things account.
 
 Step 2: Obtain an API key from https://account.smartthings.com/tokens
 
-Step 3: 
+Step 3: Head to your devices page:
 * For EU customers click [here](https://graph-eu01-euwest1.api.smartthings.com/device/list)
 * For US customers click [here](https://graph-na04-useast2.api.smartthings.com/device/list)
+* For APAC customers click [here](https://graph-ap02-apnortheast2.api.smartthings.com/device/list)
+
+  *If above links do not work for you:
+  Go to https://account.smartthings.com, login with your account and head to 'My Devices' in the top bar.*
 
 Click on the name of your TV and the device id will be shown on the URL, like so:
 ```
