@@ -80,36 +80,45 @@ Use `Rest API Call` only if the other 2 methods do not work.<br/>
 
 - **Use SmartThings TV Status information**<br/>
 (default = True)<br/>
-When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
+**This option is available only if SmartThings is configured.**
+When enabled the component will try to retrieve from SmartThings the information
 about the TV Status. This information is always used in conjunction with local ping result.<br/>
 
 - **Use SmartThings TV Channels information**<br/>
 (default = True)<br/>
-When enabled and SmartThings is configured, the component will try to retrieve from SmartThings the information
-about the TV Channel and TV Channel Name or the Running App<br/>
+**This option is available only if SmartThings is configured.**
+When enabled the component will try to retrieve from SmartThings the information about the TV Channel 
+and TV Channel Name or the Running App<br/>
 **Note: in some case this information is not properly updated, disabled it you have incorrect information.**<br/>
 
 - **Use SmartThings TV Channels number information**<br/>
 (default = False)<br/>
-If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media 
-titles, by setting this to True the TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
+**This option is available only if SmartThings is configured.**
+When enabled then the TV Channel Names will show as media titles, by setting this to True the 
+TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
 **Note: not always SmartThings provide the information for channel_name and channel_number.**<br/>
+
+- **Method used to turn on TV**<br/>
+Possible values: `WOL Packet` and `SmartThings`<br/>
+**This option is available only if SmartThings is configured.**
+WOL Packet is better when TV use wired connection.<br/>
+SmartThings normally work only when TV use wireless connection.<br/>
+    
+- **Number of times WOL packet is sent to turn on TV**<br/>
+(default = 1, range from 1 to 20)<br/>
+This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
+until the TV properly turn-on.<br/>
+
+- **Seconds to delay power ON status**<br/>
+(default = 30, range from 0 to 60)<br/>
+This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
+ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
 
 - **Use volume mute status to detect fake power ON**<br/>
 (default = True)<br/>
 When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
 TV is powered on the volume is always unmuted.<br/>
 
-- **Seconds to delay power ON status**<br/>
-(default=30, range from 0 to 60)<br/>
-This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
-ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
-
-- **Number of time WOL packet is sent to turn on TV**<br/>
-(default = 1, range from 1 to 20)<br/>
-This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
-until the TV properly turn-on.<br/>
-  
 - **List of entity to Power OFF with TV (comma separated)**<br/>
 A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). 
 This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>
@@ -121,8 +130,6 @@ This call the service `homeassistant.turn_on` for maximum the first 4 entity in 
 ## Custom configuration parameters
 
 You can configure additional option for the component using configuration variable in `configuration.yaml` section.<br/>
-Some of this option are available only during component configuration because are stored in the registry during setup 
-phase, other can be changed in `configuration.yaml` at any moment.<br/>
 
 **Please refer to [readme](https://github.com/ollo69/ha-samsungtv-smart/blob/master/README.md) for details on optional parameter and additional configuration instruction.**
 
