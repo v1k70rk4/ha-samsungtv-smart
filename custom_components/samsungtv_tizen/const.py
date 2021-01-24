@@ -14,6 +14,11 @@ class AppLaunchMethod(Enum):
     Rest = 3
 
 
+class PowerOnMethod(Enum):
+    WOL = 1
+    SmartThings = 2
+
+
 DOMAIN = "samsungtv_tizen"
 
 WS_PREFIX = "[Home Assistant]"
@@ -30,6 +35,7 @@ CONF_WS_NAME = "ws_name"
 CONF_DEVICE_OS = "device_os"
 CONF_LOAD_ALL_APPS = "load_all_apps"
 CONF_POWER_ON_DELAY = "power_on_delay"
+CONF_POWER_ON_METHOD = "power_on_method"
 CONF_USE_ST_CHANNEL_INFO = "use_st_channel_info"
 CONF_USE_ST_STATUS_INFO = "use_st_status_info"
 CONF_USE_MUTE_CHECK = "use_mute_check"
@@ -58,12 +64,12 @@ RESULT_WRONG_APIKEY = "wrong_api_key"
 
 STD_APP_LIST = {
     # app_id: smartthings app id (if different and available)
-    "org.tizen.browser": "",                    # Internet
-    "11101200001": "org.tizen.netflix-app",     # Netflix
-    "111299001912": "9Ur5IzDKqV.TizenYouTube",  # YouTube
-    "3201512006785": "org.tizen.ignition",      # Prime Video
-    "3201901017640": "MCmYXNxgcu.DisneyPlus",   # Disney+
-    "11091000000": "4ovn894vo9.Facebook",       # Facebook
-    "3201601007250": "QizQxC7CUf.PlayMovies",   # Google Play
-    "3201606009684": "rJeHak5zRg.Spotify",      # Spotify
+    "org.tizen.browser": "",                    #Internet
+    "11101200001": "org.tizen.netflix-app",     #Netflix
+    "111299001912": "9Ur5IzDKqV.TizenYouTube",  #YouTube
+    "3201512006785": "org.tizen.ignition",      #Prime Video
+    "3201901017640": "MCmYXNxgcu.DisneyPlus",   #Disney+
+    "11091000000": "4ovn894vo9.Facebook",       #Facebook
+    "3201601007250": "QizQxC7CUf.PlayMovies",   #Google Play
+    "3201606009684": "rJeHak5zRg.Spotify",      #Spotify
 }
