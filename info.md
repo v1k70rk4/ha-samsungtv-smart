@@ -105,7 +105,7 @@ WOL Packet is better when TV use wired connection.<br/>
 SmartThings normally work only when TV use wireless connection.<br/>
     
 - **Number of times WOL packet is sent to turn on TV**<br/>
-(default = 1, range from 1 to 20)<br/>
+(default = 1, range from 1 to 5)<br/>
 This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
 until the TV properly turn-on.<br/>
 
