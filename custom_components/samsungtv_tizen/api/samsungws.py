@@ -49,6 +49,7 @@ PING_MATCHER_BUSYBOX = re.compile(
 
 WIN32_PING_MATCHER = re.compile(r"(?P<min>\d+)ms.+(?P<max>\d+)ms.+(?P<avg>\d+)ms")
 
+DEFAULT_POWER_ON_DELAY = 120
 MIN_APP_SCAN_INTERVAL = 10
 MAX_WS_PING_INTERVAL = 10
 TYPE_DEEP_LINK = "DEEP_LINK"
@@ -157,6 +158,8 @@ class SamsungTVWS:
         self._artmode_status = ArtModeStatus.Unsupported
         self._power_on_requested = False
         self._power_on_requested_time = datetime.min
+        self._power_on_delay = DEFAULT_POWER_ON_DELAY
+        self._power_on_artmode = False
 
         self._installed_app = {}
         self._running_app = None
@@ -606,7 +609,9 @@ class SamsungTVWS:
             return
 
         if self._power_on_requested and artmode_status != ArtModeStatus.Unavailable:
-            if artmode_status == ArtModeStatus.On:
+            if artmode_status == ArtModeStatus.On and not self._power_on_artmode:
+                self.send_key("KEY_POWER", key_press_delay=0)
+            elif artmode_status == ArtModeStatus.Off and self._power_on_artmode:
                 self.send_key("KEY_POWER", key_press_delay=0)
             self._power_on_requested = False
 
@@ -643,14 +648,19 @@ class SamsungTVWS:
 
         if self._power_on_requested:
             difference = (call_time - self._power_on_requested_time).total_seconds()
-            if difference > 20:
+            if difference > self._power_on_delay:
                 self._power_on_requested = False
 
         return result
 
-    def set_power_on_request(self):
+    def set_power_on_request(self, set_art_mode=False, power_on_delay=0):
         self._power_on_requested = True
         self._power_on_requested_time = datetime.now()
+        self._power_on_artmode = set_art_mode
+        self._power_on_delay = max(power_on_delay, 0) or DEFAULT_POWER_ON_DELAY
+
+    def set_power_off_request(self):
+        self._power_on_requested = False
 
     def get_running_app(self, *, force_scan=False):
 

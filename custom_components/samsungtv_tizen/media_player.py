@@ -18,8 +18,8 @@ from .api.samsungws import SamsungTVWS, ArtModeStatus
 from .api.smartthings import SmartThingsTV, STStatus
 from .api.upnp import upnp
 
-import homeassistant.helpers.config_validation as cv
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.service import async_call_from_config, CONF_SERVICE_ENTITY_ID
 from homeassistant.util import dt as dt_util, Throttle
@@ -86,6 +86,7 @@ from .const import (
     DEFAULT_APP,
     DEFAULT_POWER_ON_DELAY,
     MAX_WOL_REPEAT,
+    SERVICE_SET_ART_MODE,
     STD_APP_LIST,
     WS_PREFIX,
     AppLoadMethod,
@@ -163,6 +164,14 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.debug(config)
 
     async_add_entities([SamsungTVDevice(config, entry_id, session)], True)
+
+    platform = entity_platform.current_platform.get()
+    platform.async_register_entity_service(
+        SERVICE_SET_ART_MODE,
+        None,
+        "async_set_art_mode",
+    )
+
     _LOGGER.info(
         "Samsung TV %s:%d added as '%s'",
         config.get(CONF_HOST),
@@ -915,34 +924,40 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         return send_success
 
-    async def _async_turn_on(self):
+    async def _async_turn_on(self, set_art_mode=False):
         """Turn the media player on."""
-        if self.state == STATE_ON:
-            return False
+        if set_art_mode:
+            if self._ws.artmode_status == ArtModeStatus.Off:
+                # art mode from on
+                await self.async_send_command("KEY_POWER")
+                return True
 
         if self._ws.artmode_status == ArtModeStatus.On:
-            # power on from art mode
-            await self.async_send_command("KEY_POWER")
+            if not set_art_mode:
+                # power on from art mode
+                await self.async_send_command("KEY_POWER")
             return True
 
+        if self.state != STATE_OFF:
+            return False
+
         result = True
-        if self.state == STATE_OFF:
-            if not await self.async_send_command("KEY_POWER"):
-                turn_on_method = PowerOnMethod(
-                    self._get_option(CONF_POWER_ON_METHOD, PowerOnMethod.WOL.value)
+        if not await self.async_send_command("KEY_POWER"):
+            turn_on_method = PowerOnMethod(
+                self._get_option(CONF_POWER_ON_METHOD, PowerOnMethod.WOL.value)
+            )
+
+            if turn_on_method == PowerOnMethod.SmartThings and self._st:
+                await self._st.async_send_command("turn_on")
+            else:
+                result = await self.hass.async_add_executor_job(
+                    self._send_wol_packet
                 )
 
-                if turn_on_method == PowerOnMethod.SmartThings and self._st:
-                    await self._st.async_send_command("turn_on")
-                else:
-                    result = await self.hass.async_add_executor_job(
-                        self._send_wol_packet
-                    )
-
-            if result:
-                self._state = STATE_OFF
-                self._end_of_power_off = None
-                self._ws.set_power_on_request()
+        if result:
+            self._state = STATE_OFF
+            self._end_of_power_off = None
+            self._ws.set_power_on_request(set_art_mode)
 
         return result
 
@@ -961,11 +976,15 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._power_on_detected = datetime.min
             await self._async_switch_entity(True)
 
+    async def async_set_art_mode(self):
+        await self._async_turn_on(True)
+
     def _turn_off(self):
         """Turn off media player."""
         if self._power_off_in_progress():
             return False
 
+        self._ws.set_power_off_request()
         if self._state == STATE_ON:
             if self._ws.artmode_status == ArtModeStatus.Unsupported:
                 self.send_command("KEY_POWER")
