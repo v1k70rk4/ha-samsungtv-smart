@@ -251,7 +251,7 @@ class SamsungTVWS:
             connection = ws_socket
         else:
             self.start_client(start_all=True)
-            return
+            return False
 
         payload = json.dumps(command)
         try:
@@ -261,7 +261,7 @@ class SamsungTVWS:
             if using_remote or use_control:
                 _LOGGING.info("_ws_send: try to restart communication threads")
                 self.start_client(start_all=use_control)
-            return
+            return False
 
         if using_remote:
             # we consider a message sent valid as a ping
@@ -271,6 +271,8 @@ class SamsungTVWS:
             time.sleep(self.key_press_delay)
         elif key_press_delay > 0:
             time.sleep(key_press_delay)
+
+        return True
 
     def _rest_request(self, target, method="GET"):
         url = self._format_rest_url(target)
@@ -759,7 +761,7 @@ class SamsungTVWS:
 
     def send_key(self, key, key_press_delay=None, cmd="Click"):
         _LOGGING.debug("Sending key %s", key)
-        self._ws_send(
+        return self._ws_send(
             {
                 "method": "ms.remote.control",
                 "params": {
@@ -773,9 +775,10 @@ class SamsungTVWS:
         )
 
     def hold_key(self, key, seconds):
-        self.send_key(key, key_press_delay=0, cmd="Press")
-        time.sleep(seconds)
-        self.send_key(key, key_press_delay=0, cmd="Release")
+        if self.send_key(key, key_press_delay=0, cmd="Press"):
+            time.sleep(seconds)
+            return self.send_key(key, key_press_delay=0, cmd="Release")
+        return False
 
     def move_cursor(self, x, y, duration=0):
         self._ws_send(
