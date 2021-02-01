@@ -64,6 +64,8 @@ RESULT_ST_MULTI_DEVICES = "st_multiple_device"
 RESULT_SUCCESS = "success"
 RESULT_WRONG_APIKEY = "wrong_api_key"
 
+SERVICE_SET_ART_MODE = "set_art_mode"
+
 STD_APP_LIST = {
     # app_id: smartthings app id (if different and available)
     "org.tizen.browser": "",                    # Internet
