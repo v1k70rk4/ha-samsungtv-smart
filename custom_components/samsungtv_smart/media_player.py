@@ -924,18 +924,20 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         return send_success
 
-    async def _async_turn_on(self, set_art_mode=False):
+    async def _async_power_on(self, set_art_mode=False):
         """Turn the media player on."""
         if set_art_mode:
             if self._ws.artmode_status == ArtModeStatus.Off:
                 # art mode from on
                 await self.async_send_command("KEY_POWER")
+                self._state = STATE_OFF
                 return True
 
         if self._ws.artmode_status == ArtModeStatus.On:
-            if not set_art_mode:
-                # power on from art mode
-                await self.async_send_command("KEY_POWER")
+            if set_art_mode:
+                return False
+            # power on from art mode
+            await self.async_send_command("KEY_POWER")
             return True
 
         if self.state != STATE_OFF:
@@ -961,9 +963,9 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         return result
 
-    async def async_turn_on(self):
+    async def _async_turn_on(self, set_art_mode=False):
         """Turn the media player on."""
-        result = await self._async_turn_on()
+        result = await self._async_power_on(set_art_mode)
         if not result:
             return
         if self._state == STATE_OFF:
@@ -974,9 +976,14 @@ class SamsungTVDevice(MediaPlayerEntity):
 
             self.hass.loop.call_later(POWER_ON_DELAY, update_status)
             self._power_on_detected = datetime.min
-            await self._async_switch_entity(True)
+            await self._async_switch_entity(not set_art_mode)
+
+    async def async_turn_on(self):
+        """Turn the media player on."""
+        await self._async_turn_on()
 
     async def async_set_art_mode(self):
+        """Turn the media player on setting in art mode."""
         await self._async_turn_on(True)
 
     def _turn_off(self):
