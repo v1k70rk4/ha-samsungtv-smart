@@ -111,6 +111,7 @@ CMD_RUN_APP_REST = "run_app_rest"
 CMD_SEND_KEY = "send_key"
 CMD_SEND_TEXT = "send_text"
 
+DELAYED_SOURCE_TIMEOUT = 80
 KEYHOLD_MAX_DELAY = 5.0
 KEYPRESS_DEFAULT_DELAY = 0.5
 KEYPRESS_MAX_DELAY = 2.0
@@ -248,6 +249,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._update_forced_time = None
         self._fake_on = None
         self._delayed_set_source = None
+        self._delayed_set_source_time = None
         self._st_conn_error_count = 0
 
         self._token_file = None
@@ -691,7 +693,11 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         if self.state == STATE_ON:
             if self._delayed_set_source:
-                await self.async_select_source(self._delayed_set_source, False)
+                difference = (datetime.now() - self._delayed_set_source_time).total_seconds()
+                if difference > DELAYED_SOURCE_TIMEOUT:
+                    self._delayed_set_source = None
+                else:
+                    await self.async_select_source(self._delayed_set_source, False)
             await self._update_volume_info()
             await self._get_running_app()
 
@@ -978,9 +984,9 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     async def _async_turn_on(self, set_art_mode=False):
         """Turn the media player on."""
-        result = await self._async_power_on(set_art_mode)
-        if not result:
-            return
+        self._delayed_set_source = None
+        if not await self._async_power_on(set_art_mode):
+            return False
         if self._state == STATE_OFF:
             def update_status():
                 if self._state != STATE_ON:
@@ -990,6 +996,8 @@ class SamsungTVDevice(MediaPlayerEntity):
             self.hass.loop.call_later(POWER_ON_DELAY, update_status)
             self._power_on_detected = datetime.min
             await self._async_switch_entity(not set_art_mode)
+
+        return True
 
     async def async_turn_on(self):
         """Turn the media player on."""
@@ -1275,8 +1283,9 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._delayed_set_source = None
 
         if self.state != STATE_ON:
-            await self.async_turn_on()
-            self._delayed_set_source = source
+            if await self._async_turn_on():
+                self._delayed_set_source = source
+                self._delayed_set_source_time = datetime.now()
             return
 
         if source in self._source_list:
