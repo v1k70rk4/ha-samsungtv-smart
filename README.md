@@ -371,6 +371,22 @@ service: media_player.play_media
 }
 ```
 
+***Send Text***
+---------------
+To send a specific text to a selected text input
+
+```
+service: media_player.play_media
+```
+
+```json
+{
+  "entity_id": "media_player.samsungtv",
+  "media_content_type": "send_text",
+  "media_content_id": "your text"
+}
+```
+
 # Be nice!
 If you like the component, why don't you support me by buying me a coffe?
 It would certainly motivate me to further improve this work.
