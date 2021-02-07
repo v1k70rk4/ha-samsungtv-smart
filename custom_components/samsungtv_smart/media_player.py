@@ -26,22 +26,23 @@ from homeassistant.util import dt as dt_util, Throttle
 from homeassistant.components.media_player import DEVICE_CLASS_TV
 
 from homeassistant.components.media_player.const import (
+    MEDIA_TYPE_APP,
+    MEDIA_TYPE_CHANNEL,
+    MEDIA_TYPE_URL,
+    MEDIA_TYPE_VIDEO,
+    SUPPORT_NEXT_TRACK,
     SUPPORT_PAUSE,
     SUPPORT_PLAY,
     SUPPORT_PLAY_MEDIA,
-    SUPPORT_STOP,
-    SUPPORT_VOLUME_MUTE,
-    SUPPORT_VOLUME_STEP,
-    SUPPORT_VOLUME_SET,
     SUPPORT_PREVIOUS_TRACK,
-    SUPPORT_NEXT_TRACK,
     SUPPORT_SELECT_SOURCE,
-    SUPPORT_TURN_ON,
+    SUPPORT_SELECT_SOUND_MODE,
+    SUPPORT_STOP,
     SUPPORT_TURN_OFF,
-    MEDIA_TYPE_VIDEO,
-    MEDIA_TYPE_CHANNEL,
-    MEDIA_TYPE_APP,
-    MEDIA_TYPE_URL,
+    SUPPORT_TURN_ON,
+    SUPPORT_VOLUME_MUTE,
+    SUPPORT_VOLUME_SET,
+    SUPPORT_VOLUME_STEP,
 )
 
 from homeassistant.const import (
@@ -602,11 +603,9 @@ class SamsungTVDevice(MediaPlayerEntity):
             return False
 
         if source_key.startswith("ST_HDMI"):
-            await self._st.async_send_command(
-                "selectsource", source_key.replace("ST_", "")
-            )
+            await self._st.async_select_source(source_key.replace("ST_", ""))
         elif source_key == "ST_TV":
-            await self._st.async_send_command("selectsource", "digitalTv")
+            await self._st.async_select_source("digitalTv")
         elif source_key == "ST_CHUP":
             await self._st.async_send_command("stepchannel", "up")
         elif source_key == "ST_CHDOWN":
@@ -902,9 +901,26 @@ class SamsungTVDevice(MediaPlayerEntity):
         return self._get_source()
 
     @property
+    def sound_mode(self):
+        """Name of the current sound mode."""
+        if self._st:
+            return self._st.sound_mode
+        return None
+
+    @property
+    def sound_mode_list(self):
+        """List of available sound modes."""
+        if self._st:
+            return self._st.sound_mode_list or None
+        return None
+
+    @property
     def supported_features(self):
         """Flag media player features that are supported."""
-        return SUPPORT_SAMSUNGTV_SMART
+        features = SUPPORT_SAMSUNGTV_SMART
+        if self._st:
+            features |= SUPPORT_SELECT_SOUND_MODE
+        return features
 
     @property
     def device_class(self):
@@ -969,7 +985,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             )
 
             if turn_on_method == PowerOnMethod.SmartThings and self._st:
-                await self._st.async_send_command("turn_on")
+                await self._st.async_turn_on()
             else:
                 result = await self.hass.async_add_executor_job(
                     self._send_wol_packet
@@ -1308,6 +1324,11 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         self._running_app = running_app
         self._source = source
+
+    async def async_select_sound_mode(self, sound_mode):
+        """Select sound mode."""
+        if self._st:
+            await self._st.async_set_sound_mode(sound_mode)
 
     @property
     def device_info(self):
