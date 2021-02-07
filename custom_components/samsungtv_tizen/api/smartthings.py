@@ -71,6 +71,10 @@ COMMAND_SET_CHANNEL = (
     "{'commands':[{'component': 'main','capability': 'tvChannel','command': 'setTvChannel', 'arguments': "
 )
 ARGS_SET_CHANNEL = "['{}']}}]}}"
+COMMAND_AUDIO_MODE = (
+    "{'commands':[{'component': 'main','capability': 'custom.soundmode','command': 'setSoundMode', 'arguments': "
+)
+ARGS_AUDIO_MODE = "['{}']}}]}}"
 
 DIGITAL_TV = "digitalTv"
 
@@ -122,6 +126,8 @@ class SmartThingsTV:
         self._source = ""
         self._channel = ""
         self._channel_name = ""
+        self._sound_mode = None
+        self._sound_mode_list = None
 
         self._is_forced_val = False
         self._forced_count = 0
@@ -187,7 +193,22 @@ class SmartThingsTV:
         """Return currently source list."""
         return self._source_list
 
+    @property
+    def sound_mode(self):
+        """Return current sound mode."""
+        if self._state != STStatus.STATE_ON:
+            return None
+        return self._sound_mode
+
+    @property
+    def sound_mode_list(self):
+        """Return available sound mode."""
+        if self._state != STStatus.STATE_ON:
+            return None
+        return self._sound_mode_list
+
     def get_source_name(self, source_id: str) -> str:
+        """Get source name based on source id."""
         if not self._source_list_map:
             return ""
         if source_id.upper() == DIGITAL_TV.upper():
@@ -199,6 +220,7 @@ class SmartThingsTV:
         return ""
 
     def set_application(self, app_id):
+        """Set running application info."""
         if self._use_channel_info:
             self._channel = ""
             self._channel_name = app_id
@@ -206,6 +228,7 @@ class SmartThingsTV:
             self._forced_count = 0
 
     def _set_source(self, source):
+        """Set current source info."""
         if source != self._source:
             self._source = source
             self._channel = ""
@@ -214,8 +237,20 @@ class SmartThingsTV:
             self._forced_count = 0
 
     @staticmethod
+    def _load_json_list(dev_data, list_name):
+        """Try load a list from string to json format."""
+        load_list = []
+        json_list = dev_data.get(list_name, {}).get("value")
+        if json_list:
+            try:
+                load_list = json.loads(json_list)
+            except (TypeError, ValueError):
+                pass
+        return load_list
+
+    @staticmethod
     async def get_devices_list(api_key, session: ClientSession, device_label=""):
-        """Get list of available devices"""
+        """Get list of available SmartThings devices"""
 
         result = {}
 
@@ -269,6 +304,27 @@ class SmartThingsTV:
                 await resp.json()
 
         return
+
+    async def _async_send_command(self, data_cmd):
+        """Send a command via SmartThings"""
+        device_id = self._device_id
+        if not device_id:
+            return
+        if not data_cmd:
+            return
+
+        api_device = f"{API_DEVICES}/{device_id}"
+        api_command = f"{api_device}/commands"
+
+        async with self._session.post(
+            api_command,
+            headers=_headers(self._api_key),
+            data=data_cmd,
+            raise_for_status=True,
+        ) as resp:
+            await resp.json()
+
+        await self._device_refresh()
 
     async def async_device_health(self):
         """Check device availability"""
@@ -348,23 +404,18 @@ class SmartThingsTV:
         device_muted = dev_data.get("mute", {}).get("value", "")
         self._muted = (device_muted == "mute")
 
-        load_list = []
-        json_list = dev_data.get("supportedInputSources", {}).get("value")
-        if json_list:
-            try:
-                load_list = json.loads(json_list)
-            except (TypeError, ValueError):
-                pass
-        self._source_list = load_list
+        self._source_list = self._load_json_list(
+            dev_data, "supportedInputSources"
+        )
 
-        load_list = []
-        json_list = dev_data.get("supportedInputSourcesMap", {}).get("value")
-        if json_list:
-            try:
-                load_list = json.loads(json_list)
-            except (TypeError, ValueError):
-                pass
-        self._source_list_map = load_list
+        self._source_list_map = self._load_json_list(
+            dev_data, "supportedInputSourcesMap"
+        )
+
+        self._sound_mode = dev_data.get("soundMode", {}).get("value")
+        self._sound_mode_list = self._load_json_list(
+            dev_data, "supportedSoundModes"
+        )
 
         if self._is_forced_val and self._forced_count <= 0:
             self._forced_count += 1
@@ -388,55 +439,61 @@ class SmartThingsTV:
             self._channel = ""
             self._channel_name = ""
 
-    async def async_send_command(self, cmdtype, command=""):
-        """Send a command too the device"""
+    async def async_turn_off(self):
+        """Turn off TV via SmartThings"""
+        await self._async_send_command(COMMAND_POWER_OFF)
 
-        device_id = self._device_id
-        if not device_id:
+    async def async_turn_on(self):
+        """Turn on TV via SmartThings"""
+        await self._async_send_command(COMMAND_POWER_ON)
+
+    async def async_send_command(self, cmd_type, command=""):
+        """Send a command to the device"""
+        data_cmd = None
+
+        if cmd_type == "setvolume":  # sets volume
+            cmd_args = ARGS_SET_VOLUME.format(command)
+            data_cmd = COMMAND_SET_VOLUME + cmd_args
+        elif cmd_type == "stepvolume":  # steps volume up or down
+            if command == "up":
+                data_cmd = COMMAND_VOLUME_UP
+            elif command == "down":
+                data_cmd = COMMAND_VOLUME_DOWN
+        elif cmd_type == "audiomute":  # mutes audio
+            if command == "on":
+                data_cmd = COMMAND_MUTE
+            elif command == "off":
+                data_cmd = COMMAND_UNMUTE
+        elif cmd_type == "selectchannel":  # changes channel
+            cmd_args = ARGS_SET_CHANNEL.format(command)
+            data_cmd = COMMAND_SET_CHANNEL + cmd_args
+        elif cmd_type == "stepchannel":  # steps channel up or down
+            if command == "up":
+                data_cmd = COMMAND_CHANNEL_UP
+            elif command == "down":
+                data_cmd = COMMAND_CHANNEL_DOWN
+        else:
             return
 
-        api_device = f"{API_DEVICES}/{device_id}"
-        api_command = f"{api_device}/commands"
-        datacmd = None
+        await self._async_send_command(data_cmd)
 
-        if cmdtype == "turn_off":  # turns off
-            datacmd = COMMAND_POWER_OFF
-        elif cmdtype == "turn_on":  # turns on
-            datacmd = COMMAND_POWER_ON
-        elif cmdtype == "setvolume":  # sets volume
-            cmdargs = ARGS_SET_VOLUME.format(command)
-            datacmd = COMMAND_SET_VOLUME + cmdargs
-        elif cmdtype == "stepvolume":  # steps volume up or down
-            if command == "up":
-                datacmd = COMMAND_VOLUME_UP
-            elif command == "down":
-                datacmd = COMMAND_VOLUME_DOWN
-        elif cmdtype == "audiomute":  # mutes audio
-            if command == "on":
-                datacmd = COMMAND_MUTE
-            elif command == "off":
-                datacmd = COMMAND_UNMUTE
-        elif cmdtype == "selectchannel":  # changes channel
-            cmdargs = ARGS_SET_CHANNEL.format(command)
-            datacmd = COMMAND_SET_CHANNEL + cmdargs
-        elif cmdtype == "stepchannel":  # steps channel up or down
-            if command == "up":
-                datacmd = COMMAND_CHANNEL_UP
-            elif command == "down":
-                datacmd = COMMAND_CHANNEL_DOWN
-        elif cmdtype == "selectsource":  # changes source
-            cmdargs = ARGS_SET_SOURCE.format(command)
-            datacmd = COMMAND_SET_SOURCE + cmdargs
-            # set property to reflect new changes
-            self._set_source(command)
+    async def async_select_source(self, source):
+        """Select source"""
+        # if source not in self._source_list:
+        #     return
+        cmd_args = ARGS_SET_SOURCE.format(source)
+        data_cmd = COMMAND_SET_SOURCE + cmd_args
+        # set property to reflect new changes
+        self._set_source(source)
+        await self._async_send_command(data_cmd)
 
-        if datacmd:
-            async with self._session.post(
-                api_command,
-                headers=_headers(self._api_key),
-                data=datacmd,
-                raise_for_status=True,
-            ) as resp:
-                await resp.json()
-
-            await self._device_refresh()
+    async def async_set_sound_mode(self, mode):
+        """Select sound mode"""
+        if self._state != STStatus.STATE_ON:
+            return
+        if mode not in self._sound_mode_list:
+            return
+        cmd_args = ARGS_AUDIO_MODE.format(mode)
+        data_cmd = COMMAND_AUDIO_MODE + cmd_args
+        await self._async_send_command(data_cmd)
+        self._sound_mode = mode
