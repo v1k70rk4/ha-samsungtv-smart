@@ -1,20 +1,35 @@
-#Smartthings TV integration#
-import requests
+# Smartthings TV integration#
+# import requests
 import xml.etree.ElementTree as ET
+from aiohttp import ClientSession
+from async_timeout import timeout
+from typing import Optional
+
+DEFAULT_TIMEOUT = 0.2
+
 
 class upnp:
-
-    def __init__(self, host):
-        self.host = host
-        self.mute = False
-        self.volume = 0
+    def __init__(self, host, session: Optional[ClientSession] = None):
+        self._host = host
+        self._mute = False
+        self._volume = 0
+        self._connected = False
+        if session:
+            self._session = session
+            self._managed_session = False
+        else:
+            self._session = ClientSession()
+            self._managed_session = True
 
     def __enter__(self):
         return self
 
-    def SOAPrequest(self, action, arguments, protocole):
-        headers = {'SOAPAction': '"urn:schemas-upnp-org:service:{protocole}:1#{action}"'.format(action=action, protocole=protocole), 'content-type': 'text/xml'}
-        body = """<?xml version="1.0" encoding="utf-8"?>
+    async def _SOAPrequest(self, action, arguments, protocole):
+        headers = {
+            "SOAPAction": f'"urn:schemas-upnp-org:service:{protocole}:1#{action}"',
+            "content-type": "text/xml",
+        }
+        body = f"""<?xml version="1.0" encoding="utf-8"?>
                 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
                     <s:Body>
                     <u:{action} xmlns:u="urn:schemas-upnp-org:service:{protocole}:1">
@@ -22,53 +37,77 @@ class upnp:
                         {arguments}
                     </u:{action}>
                     </s:Body>
-                </s:Envelope>""".format(action=action, arguments=arguments, protocole=protocole)
+                </s:Envelope>"""
         response = None
         try:
-            response = requests.post("http://{host}:9197/upnp/control/{protocole}1".format(host=self.host, protocole=protocole), data=body, headers=headers, timeout=0.1)
-            response = response.content
+            with timeout(DEFAULT_TIMEOUT):
+                async with self._session.post(
+                    f"http://{self._host}:9197/upnp/control/{protocole}1",
+                    headers=headers,
+                    data=body,
+                    raise_for_status=True,
+                ) as resp:
+                    response = await resp.content.read()
+                    self._connected = True
         except:
-            pass
+            self._connected = False
+
         return response
 
-    def get_volume(self):
-        response = self.SOAPrequest('GetVolume', "<Channel>Master</Channel>", 'RenderingControl')
+    @property
+    def connected(self):
+        return self._connected
+
+    async def async_get_volume(self):
+        response = await self._SOAPrequest(
+            "GetVolume", "<Channel>Master</Channel>", "RenderingControl"
+        )
         if response is not None:
-            volume_xml = response.decode('utf8')
+            volume_xml = response.decode("utf8")
             tree = ET.fromstring(volume_xml)
-            for elem in tree.iter(tag='CurrentVolume'):
-                self.volume = elem.text
-        return self.volume
+            for elem in tree.iter(tag="CurrentVolume"):
+                self._volume = elem.text
+        return self._volume
 
-    def set_volume(self, volume):
-        self.SOAPrequest('SetVolume', "<Channel>Master</Channel><DesiredVolume>{}</DesiredVolume>".format(volume), 'RenderingControl')
+    async def async_set_volume(self, volume):
+        await self._SOAPrequest(
+            "SetVolume",
+            f"<Channel>Master</Channel><DesiredVolume>{volume}</DesiredVolume>",
+            "RenderingControl",
+        )
 
-    def get_mute(self):
-        response = self.SOAPrequest('GetMute', "<Channel>Master</Channel>", 'RenderingControl')
+    async def async_get_mute(self):
+        response = await self._SOAPrequest(
+            "GetMute", "<Channel>Master</Channel>", "RenderingControl"
+        )
         if response is not None:
             # mute_xml = response.decode('utf8')
-            tree = ET.fromstring(response.decode('utf8'))
+            tree = ET.fromstring(response.decode("utf8"))
             mute = 0
-            for elem in tree.iter(tag='CurrentMute'):
+            for elem in tree.iter(tag="CurrentMute"):
                 mute = elem.text
-            if (int(mute) == 0):
-                self.mute = False
+            if int(mute) == 0:
+                self._mute = False
             else:
-                self.mute = True
-        return self.mute
+                self._mute = True
 
-    def set_current_media(self, url):
+        return self._mute
+
+    async def async_set_current_media(self, url):
         """ Set media to playback and play it."""
         try:
-            self.SOAPrequest('SetAVTransportURI', "<CurrentURI>{url}</CurrentURI><CurrentURIMetaData></CurrentURIMetaData>".format(url=url), 'AVTransport')
-            self.SOAPrequest('Play', "<Speed>1</Speed>", 'AVTransport')
+            await self._SOAPrequest(
+                "SetAVTransportURI",
+                f"<CurrentURI>{url}</CurrentURI><CurrentURIMetaData></CurrentURIMetaData>",
+                "AVTransport",
+            )
+            await self._SOAPrequest("Play", "<Speed>1</Speed>", "AVTransport")
         except Exception:
             pass
 
-    def play(self):
+    async def async_play(self):
         """ Play media that was already set as current."""
         try:
-            self.SOAPrequest('Play', "<Speed>1</Speed>", 'AVTransport')
+            await self._SOAPrequest("Play", "<Speed>1</Speed>", "AVTransport")
         except Exception:
             pass
-
