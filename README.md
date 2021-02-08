@@ -387,6 +387,53 @@ service: media_player.play_media
 }
 ```
 
+***Select sound mode (SmartThings only)***
+---------------
+
+```
+service: media_player.select_sound_mode
+```
+
+```json
+{
+  "entity_id": "media_player.samsungtv",
+  "sound_mode": "your mode"
+}
+```
+
+**Note**: You can get list of valid `sound_mode` in the `sound_mode_list` state attribute
+
+
+***Select picture mode (SmartThings only)***
+---------------
+
+```
+service: samsungtv_smart.select_picture_mode
+```
+
+```json
+{
+  "entity_id": "media_player.samsungtv",
+  "picture_mode": "your mode"
+}
+```
+
+**Note**: You can get list of valid `picture_mode` in the `picture_mode_list` state attribute
+
+
+***Set Art Mode (for TV that support it)***
+---------------
+
+```
+service: samsungtv_smart.set_art_mode
+```
+
+```json
+{
+  "entity_id": "media_player.samsungtv"
+}
+```
+
 # Be nice!
 If you like the component, why don't you support me by buying me a coffe?
 It would certainly motivate me to further improve this work.
