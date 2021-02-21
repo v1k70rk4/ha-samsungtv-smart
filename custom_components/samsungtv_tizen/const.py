@@ -42,6 +42,7 @@ CONF_USE_ST_CHANNEL_INFO = "use_st_channel_info"
 CONF_USE_ST_STATUS_INFO = "use_st_status_info"
 CONF_WOL_REPEAT = "wol_repeat"
 CONF_WS_NAME = "ws_name"
+CONF_LOGO_OPTION = "logo_option"
 
 # obsolete
 CONF_UPDATE_METHOD = "update_method"
@@ -69,12 +70,40 @@ SERVICE_SET_ART_MODE = "set_art_mode"
 
 STD_APP_LIST = {
     # app_id: smartthings app id (if different and available)
-    "org.tizen.browser": "",                    # Internet
-    "11101200001": "RN1MCdNq8t.Netflix",        # Netflix
+    "org.tizen.browser": "",  # Internet
+    "11101200001": "RN1MCdNq8t.Netflix",  # Netflix
     "111299001912": "9Ur5IzDKqV.TizenYouTube",  # YouTube
-    "3201512006785": "org.tizen.ignition",      # Prime Video
-    "3201901017640": "MCmYXNxgcu.DisneyPlus",   # Disney+
-    "11091000000": "4ovn894vo9.Facebook",       # Facebook
-    "3201601007250": "QizQxC7CUf.PlayMovies",   # Google Play
-    "3201606009684": "rJeHak5zRg.Spotify",      # Spotify
+    "3201512006785": "org.tizen.ignition",  # Prime Video
+    "3201901017640": "MCmYXNxgcu.DisneyPlus",  # Disney+
+    "11091000000": "4ovn894vo9.Facebook",  # Facebook
+    "3201601007250": "QizQxC7CUf.PlayMovies",  # Google Play
+    "3201606009684": "rJeHak5zRg.Spotify",  # Spotify
 }
+
+# Logo feature constants
+class LogoOption(Enum):
+    Disabled = 1
+    WhiteColor = 2
+    BlueColor = 3
+    BlueWhite = 4
+    DarkWhite = 5
+    TransparentColor = 6
+    TransparentWhite = 7
+
+
+LOGO_OPTIONS_MAPPING = {
+    LogoOption.Disabled: "none",
+    LogoOption.WhiteColor: "fff-color",
+    LogoOption.BlueColor: "05a9f4-color",
+    LogoOption.BlueWhite: "05a9f4-white",
+    LogoOption.DarkWhite: "282c34-white",
+    LogoOption.TransparentColor: "transparent-color",
+    LogoOption.TransparentWhite: "transparent-white",
+}
+LOGO_OPTION_DEFAULT = [LogoOption.WhiteColor.value, "fff-color"]
+LOGO_BASE_URL = "https://jaruba.github.io/channel-logos/"
+LOGO_FILE_PATH = "/logo_paths.json"
+LOGO_FILE_DOWNLOAD_PATH = "/logo_paths_download.json"
+LOGO_FILE_DAYS_BEFORE_UPDATE = 1
+LOGO_MIN_SCORE_REQUIRED = 80
+LOGO_MEDIATITLE_KEYWORD_REMOVAL = ["HD"]
