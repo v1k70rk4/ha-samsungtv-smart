@@ -40,7 +40,6 @@ from .const import (
     CONF_WOL_REPEAT,
     CONF_WS_NAME,
     CONF_LOGO_OPTION,
-    LOGO_OPTION_DEFAULT,
     DEFAULT_POWER_ON_DELAY,
     MAX_WOL_REPEAT,
     RESULT_NOT_SUCCESSFUL,
@@ -52,7 +51,11 @@ from .const import (
     AppLaunchMethod,
     AppLoadMethod,
     PowerOnMethod,
+)
+
+from .logo import (
     LogoOption,
+    LOGO_OPTION_DEFAULT,
 )
 
 APP_LAUNCH_METHODS = {

@@ -826,40 +826,9 @@ class SamsungTVDevice(MediaPlayerEntity):
         return self._media_image_url
 
     async def _update_media(self):
-        new_media_title = None
-        channel_number_included = False
         logo_option_changed = False
-
-        if self._state != STATE_ON:
-            new_media_title = None
-
-        if self._st:
-            if self._st.state == STStatus.STATE_OFF:
-                new_media_title = None
-            elif self._running_app == DEFAULT_APP:
-                if self._st.source in ["digitalTv", "TV"]:
-                    if self._st.channel_name != "":
-                        show_channel_number = self._get_option(
-                            CONF_SHOW_CHANNEL_NR, False
-                        )
-                        if show_channel_number and self._st.channel != "":
-                            channel_number_included = True
-                            new_media_title = (
-                                self._st.channel_name + " (" + self._st.channel + ")"
-                            )
-                        new_media_title = self._st.channel_name
-                    elif self._st.channel != "":
-                        new_media_title = self._st.channel
-                elif self._st.channel_name != "":
-                    # the channel name holds the running app ID
-                    # regardless of the self._cloud_source value
-                    new_media_title = self._st.channel_name
-                else:
-                    new_media_title = self._get_source()
-            else:
-                new_media_title = self._get_source()
-        else:
-            new_media_title = self._get_source()
+        show_channel_number = self._get_option(CONF_SHOW_CHANNEL_NR, False)
+        new_media_title = self._get_new_media_title(show_channel_number)
 
         _LOGGER.debug(
             "New media title is: %s, old media title is: %s, running app is: %s",
@@ -878,10 +847,30 @@ class SamsungTVDevice(MediaPlayerEntity):
             new_media_title and new_media_title != self._media_title
         ) or logo_option_changed:
             title_match = (
-                self._st.channel_name if channel_number_included else new_media_title
+                self._st.channel_name if show_channel_number else new_media_title
             )
             self._media_image_url = await self._logo.async_find_match(title_match)
             self._media_title = new_media_title
+
+    def _get_new_media_title(self, show_channel_number):
+        if self._state != STATE_ON:
+            return None
+        if self._st:
+            if self._st.state == STStatus.STATE_OFF:
+                return None
+            if self._running_app == DEFAULT_APP:
+                if self._st.source in ["digitalTv", "TV"]:
+                    if self._st.channel_name != "":
+                        if show_channel_number and self._st.channel != "":
+                            return self._st.channel_name + " (" + self._st.channel + ")"
+                        return self._st.channel_name
+                    if self._st.channel != "":
+                        return self._st.channel
+            if self._st.channel_name != "":
+                # the channel name holds the running app ID
+                # regardless of the self._cloud_source value
+                return self._st.channel_name
+        return self._get_source()
 
     @property
     def media_channel(self):

@@ -79,31 +79,3 @@ STD_APP_LIST = {
     "3201601007250": "QizQxC7CUf.PlayMovies",  # Google Play
     "3201606009684": "rJeHak5zRg.Spotify",  # Spotify
 }
-
-# Logo feature constants
-class LogoOption(Enum):
-    Disabled = 1
-    WhiteColor = 2
-    BlueColor = 3
-    BlueWhite = 4
-    DarkWhite = 5
-    TransparentColor = 6
-    TransparentWhite = 7
-
-
-LOGO_OPTIONS_MAPPING = {
-    LogoOption.Disabled: "none",
-    LogoOption.WhiteColor: "fff-color",
-    LogoOption.BlueColor: "05a9f4-color",
-    LogoOption.BlueWhite: "05a9f4-white",
-    LogoOption.DarkWhite: "282c34-white",
-    LogoOption.TransparentColor: "transparent-color",
-    LogoOption.TransparentWhite: "transparent-white",
-}
-LOGO_OPTION_DEFAULT = [LogoOption.WhiteColor.value, "fff-color"]
-LOGO_BASE_URL = "https://jaruba.github.io/channel-logos/"
-LOGO_FILE_PATH = "/logo_paths.json"
-LOGO_FILE_DOWNLOAD_PATH = "/logo_paths_download.json"
-LOGO_FILE_DAYS_BEFORE_UPDATE = 1
-LOGO_MIN_SCORE_REQUIRED = 80
-LOGO_MEDIATITLE_KEYWORD_REMOVAL = ["HD"]
