@@ -39,6 +39,7 @@ from .const import (
     CONF_SYNC_TURN_ON,
     CONF_WOL_REPEAT,
     CONF_WS_NAME,
+    CONF_LOGO_OPTION,
     DEFAULT_POWER_ON_DELAY,
     MAX_WOL_REPEAT,
     RESULT_NOT_SUCCESSFUL,
@@ -50,6 +51,11 @@ from .const import (
     AppLaunchMethod,
     AppLoadMethod,
     PowerOnMethod,
+)
+
+from .logo import (
+    LogoOption,
+    LOGO_OPTION_DEFAULT,
 )
 
 APP_LAUNCH_METHODS = {
@@ -67,6 +73,16 @@ APP_LOAD_METHODS = {
 POWER_ON_METHODS = {
     PowerOnMethod.WOL.value: "WOL Packet (better for wired connection)",
     PowerOnMethod.SmartThings.value: "SmartThings (better for wireless connection)",
+}
+
+LOGO_OPTIONS = {
+    LogoOption.Disabled.value: "Disabled",
+    LogoOption.WhiteColor.value: "White background, Color logo",
+    LogoOption.BlueColor.value: "Blue background, Color logo",
+    LogoOption.BlueWhite.value: "Blue background, White logo",
+    LogoOption.DarkWhite.value: "Dark background, White logo",
+    LogoOption.TransparentColor.value: "Transparent background, Color logo",
+    LogoOption.TransparentWhite.value: "Transparent background, White logo",
 }
 
 CONFIG_RESULTS = {
@@ -114,6 +130,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._mac = None
         self._ws_name = None
         self._use_default_name = False
+        self._logo_option = None
 
     def _get_entry(self):
         """Generate new entry."""
@@ -422,6 +439,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_USE_MUTE_CHECK, True
                     ),
                 ): bool,
+                vol.Optional(
+                    CONF_LOGO_OPTION,
+                    default=self.config_entry.options.get(
+                        CONF_LOGO_OPTION, LOGO_OPTION_DEFAULT[0]
+                    ),
+                ): vol.In(LOGO_OPTIONS),
                 vol.Optional(
                     CONF_SYNC_TURN_OFF,
                     default=self.config_entry.options.get(
