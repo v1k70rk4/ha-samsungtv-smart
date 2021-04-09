@@ -9,7 +9,7 @@
     "aiofiles==0.6.0"
   ],
   "dependencies": [],
-  "codeowners": ["@jaruba"],
-  "homeassistant": "0.99.3",
-  "config_flow": true
+  "codeowners": ["@jaruba", "@ollo69", "@screwdgeh"],
+  "config_flow": true,
+  "version": "2.0.0"
 }
