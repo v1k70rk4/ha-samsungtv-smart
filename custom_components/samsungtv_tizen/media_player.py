@@ -24,6 +24,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.service import async_call_from_config, CONF_SERVICE_ENTITY_ID
+from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.util import dt as dt_util, Throttle
 
 from homeassistant.components.media_player.const import (
@@ -176,8 +177,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     hostname = config.get(CONF_HOST)
     port = config.get(CONF_PORT)
     token_file = get_token_file(hass, hostname, port)
+    logo_file = hass.config.path(STORAGE_DIR, f"{DOMAIN}_logo_paths")
 
-    async_add_entities([SamsungTVDevice(config, entry_id, session, token_file)], True)
+    async_add_entities(
+        [SamsungTVDevice(config, entry_id, session, token_file, logo_file)], True
+    )
 
     # register services
     platform = entity_platform.current_platform.get()
@@ -203,7 +207,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 class SamsungTVDevice(MediaPlayerEntity):
     """Representation of a Samsung TV."""
 
-    def __init__(self, config, entry_id, session: ClientSession, token_file):
+    def __init__(self, config, entry_id, session: ClientSession, token_file, logo_file):
         """Initialize the Samsung device."""
 
         # Save a reference to the imported classes
@@ -299,6 +303,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._logo_option = LOGO_OPTION_DEFAULT[0]
         self._logo = Logo(
             logo_option=self._logo_option,
+            logo_file_download=logo_file,
             session=session,
         )
         self._media_title = None
@@ -808,9 +813,11 @@ class SamsungTVDevice(MediaPlayerEntity):
     def _get_new_media_title(self, show_channel_number):
         if self._state != STATE_ON:
             return None
+
         if self._st:
             if self._st.state == STStatus.STATE_OFF:
                 return None
+
             if self._running_app == DEFAULT_APP:
                 if self._st.source in ["digitalTv", "TV"]:
                     if self._st.channel_name != "":
@@ -819,10 +826,12 @@ class SamsungTVDevice(MediaPlayerEntity):
                         return self._st.channel_name
                     if self._st.channel != "":
                         return self._st.channel
-            if self._st.channel_name != "":
-                # the channel name holds the running app ID
-                # regardless of the self._cloud_source value
-                return self._st.channel_name
+
+                elif self._st.channel_name != "":
+                    # the channel name holds the running app ID
+                    # regardless of the self._cloud_source value
+                    return self._st.channel_name
+
         return self._get_source()
 
     @property
