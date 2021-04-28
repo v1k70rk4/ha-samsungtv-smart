@@ -6,6 +6,7 @@ import json
 import logging
 import numpy as np
 import os
+import re
 import traceback
 
 from datetime import timedelta, datetime
@@ -39,7 +40,7 @@ LOGO_FILE = "logo_paths.json"
 LOGO_FILE_DOWNLOAD = "logo_paths_download.json"
 LOGO_FILE_DAYS_BEFORE_UPDATE = 1
 LOGO_MIN_SCORE_REQUIRED = 80
-LOGO_MEDIATITLE_KEYWORD_REMOVAL = ["HD"]
+LOGO_MEDIATITLE_KEYWORD_REMOVAL = ["HDTV", "HD"]
 LOGO_MAX_PATHS = 30000
 
 _LOGGER = logging.getLogger(__name__)
@@ -176,9 +177,19 @@ class Logo:
             return
         _LOGGER.debug("Matching media title for %s", media_title)
         await self._async_ensure_latest_path_file()
+
+        # remove string between parenthesis ()
+        removal = re.finditer(r"\((.*?)\)", media_title)
+        for match in removal:
+            media_title = media_title.replace(match.group(), "")
+
+        # remove specific strings
         for word in LOGO_MEDIATITLE_KEYWORD_REMOVAL:
             media_title = media_title.lower().replace(word.lower(), "")
+
+        # remove leading and trailing spaces
         media_title = media_title.lower().strip()
+
         try:
             if os.path.isfile(self._logo_file_download_path):
                 async with aiofiles.open(self._logo_file_download_path, "r") as f:
