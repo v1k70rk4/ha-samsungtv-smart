@@ -342,7 +342,10 @@ class SamsungTVDevice(MediaPlayerEntity):
         return retval
 
     def _get_option(self, param, default=None):
-        options = self.hass.data[DOMAIN][self._entry_id].get("options", {})
+        entry_id = self.hass.data.get(DOMAIN, {}).get(self._entry_id)
+        if not entry_id:
+            return default
+        options = entry_id.get("options", {})
         return options.get(param, default)
 
     def _power_off_in_progress(self):
@@ -785,8 +788,12 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     async def _update_media(self):
         logo_option_changed = False
-        show_channel_number = self._get_option(CONF_SHOW_CHANNEL_NR, False)
-        new_media_title = self._get_new_media_title(show_channel_number)
+        new_media_title = self._get_new_media_title()
+
+        if not new_media_title:
+            self._media_image_url = None
+            self._media_title = None
+            return
 
         _LOGGER.debug(
             "New media title is: %s, old media title is: %s, running app is: %s",
@@ -801,16 +808,14 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._logo.set_logo_color(new_logo_option)
             logo_option_changed = True
 
-        if (
-            new_media_title and new_media_title != self._media_title
-        ) or logo_option_changed:
-            title_match = (
-                self._st.channel_name if show_channel_number else new_media_title
-            )
-            self._media_image_url = await self._logo.async_find_match(title_match)
-            self._media_title = new_media_title
+        if new_media_title == self._media_title and not logo_option_changed:
+            return
 
-    def _get_new_media_title(self, show_channel_number):
+        media_image_url = await self._logo.async_find_match(new_media_title)
+        self._media_image_url = media_image_url
+        self._media_title = new_media_title
+
+    def _get_new_media_title(self):
         if self._state != STATE_ON:
             return None
 
@@ -821,6 +826,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             if self._running_app == DEFAULT_APP:
                 if self._st.source in ["digitalTv", "TV"]:
                     if self._st.channel_name != "":
+                        show_channel_number = self._get_option(CONF_SHOW_CHANNEL_NR, False)
                         if show_channel_number and self._st.channel != "":
                             return self._st.channel_name + " (" + self._st.channel + ")"
                         return self._st.channel_name
