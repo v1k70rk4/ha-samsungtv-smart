@@ -55,6 +55,11 @@ access token (if created) and then click 'Submit'
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
 4. Congrats! You're all set!
 
+**Note**: be sure that your TV and HA are connected to the same VLAN. Websocket connection through different VLAN normally
+not work because not supported by Samsung TV.
+If you have errors during configuration, try to power cycle your TV. This will close running applications that can prevent 
+websocket connection initialization.
+
 ### Option B: Configuration via editing `configuration.yaml`
 
 **From v0.3.16 initial configuration from yaml is not allowed.**
