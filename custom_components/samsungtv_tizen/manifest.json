@@ -4,7 +4,7 @@
   "documentation": "https://github.com/jaruba/ha-samsungtv-tizen",
   "issue_tracker": "https://github.com/jaruba/ha-samsungtv-tizen/issues",
   "requirements": [
-    "websocket-client==0.56.0",
+    "websocket-client==1.0.1",
     "wakeonlan>=2.0.0",
     "numpy==1.19.2",
     "aiofiles==0.6.0"
