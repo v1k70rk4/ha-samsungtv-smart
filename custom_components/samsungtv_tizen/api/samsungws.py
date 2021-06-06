@@ -342,7 +342,9 @@ class SamsungTVWS:
         _LOGGING.debug("Thread SamsungRemote started")
         # we set ping interval (1 hour) only to enable multi-threading mode
         # on socket. TV do not answer to ping but send ping to client
-        self._ws_remote.run_forever(sslopt=sslopt)
+        self._ws_remote.run_forever(
+            sslopt=sslopt, ping_interval=3600
+        )
         self._is_connected = False
         if self._ws_art:
             self._ws_art.close()
