@@ -10,5 +10,5 @@
   "dependencies": [],
   "codeowners": ["@jaruba"],
   "homeassistant": "0.99.3",
-  "version": "1.5.8"
+  "version": "1.5.9"
 }
