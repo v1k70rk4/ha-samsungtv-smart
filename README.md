@@ -34,6 +34,7 @@ eventually install the latest version 0.1.x waiting new fixes.
 * Ability to customize source list at media player dropdown list
 * Cast video URLs to Samsung TV
 * Connect to SmartThings Cloud API for additional features: see TV channel names, see which HDMI source is selected, more key codes to change input source
+* Display logos of TV channels (requires Smartthings enabled) and apps
 
 ![N|Solid](https://i.imgur.com/8mCGZoO.png)
 ![N|Solid](https://i.imgur.com/t3e4bJB.png)
@@ -106,24 +107,7 @@ You can still use `configuration.yaml` to set the additional parameter as explai
 
 From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Identify the '**SamsungTV Smart**'
 integration configured for your TV and click the `OPTIONS` button.<br/>
-Here you chan change the following options:  
-
-- **Applications list load mode at startup**<br/>
-Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
-This option determine the mode application list is automatic generated.<br>
-With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` will be generated a minimal list  
-with only the most common application, with `Not Load` application list will be empty.<br/>
-**Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
-
-- **Applications launch method used**<br/>
-Possible values: `Standard Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
-This option determine the mode used to launch applications.<br/>
-Use `Rest API Call` only if the other 2 methods do not work.<br/>
-
-- **Dump apps list on log file at startup**<br/>
-(default = False)<br/>
-When enabled the component will try to dump the list of available apps in the HA log file.
-The dump of the apps may not work, and in any case will not be executed if a custom `app_list` is defined.<br/>
+Here you can change the following options:  
 
 - **Use SmartThings TV Status information**<br/>
 (default = True)<br/>
@@ -151,20 +135,14 @@ Possible values: `WOL Packet` and `SmartThings`<br/>
 WOL Packet is better when TV use wired connection.<br/>
 SmartThings normally work only when TV use wireless connection.<br/>
     
-- **Number of times WOL packet is sent to turn on TV**<br/>
-(default = 1, range from 1 to 5)<br/>
-This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
-until the TV properly turn-on.<br/>
-
-- **Seconds to delay power ON status**<br/>
-(default = 30, range from 0 to 60)<br/>
-This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
-ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
-
-- **Use volume mute status to detect fake power ON**<br/>
-(default = True)<br/>
-When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
-TV is powered on the volume is always unmuted.<br/>
+- **Logo options**<br/>
+The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color).<br/>
+Supported values: "none", "white-color", "dark-white", "blue-color", "blue-white", "darkblue-white", "transparent-color", "transparent-white"<br/>
+Default value: "white-color" (background: white, logo: color)<br/>
+Notice that your logo is missing or outdated? In case of a missing TV channel logo also make sure you have Smartthings enabled. 
+This is required for the component to know the name of the TV channel.<br/>
+Check guide [here](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Logos.md) 
+for updating the logo database this component is relying on.
 
 - **List of entity to Power OFF with TV (comma separated)**<br/>
 A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). 
@@ -173,6 +151,43 @@ This call the service `homeassistant.turn_off` for maximum the first 4 entity in
 - **List of entity to Power ON with TV (comma separated)**<br/>
 A list of HA entity to Turn ON when the TV entity is turned ON (maximum 4).
 This call the service `homeassistant.turn_on` for maximum the first 4 entity in the provided list.<br/>
+
+- **Show advanced options**<br/>
+Selecting this option and clicking submit a new options page is opened containing the advanced options described below.
+
+### Advanced options
+
+- **Applications list load mode at startup**<br/>
+Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
+This option determine the mode application list is automatic generated.<br>
+With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` will be generated a minimal list  
+with only the most common application, with `Not Load` application list will be empty.<br/>
+**Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
+
+- **Applications launch method used**<br/>
+Possible values: `Standard Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
+This option determine the mode used to launch applications.<br/>
+Use `Rest API Call` only if the other 2 methods do not work.<br/>
+
+- **Dump apps list on log file at startup**<br/>
+(default = False)<br/>
+When enabled the component will try to dump the list of available apps in the HA log file.
+The dump of the apps may not work, and in any case will not be executed if a custom `app_list` is defined.<br/>
+
+- **Use volume mute status to detect fake power ON**<br/>
+(default = True)<br/>
+When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
+TV is powered on the volume is always unmuted.<br/>
+
+- **Number of times WOL packet is sent to turn on TV**<br/>
+(default = 1, range from 1 to 5)<br/>
+This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
+until the TV properly turn-on.<br/>
+ 
+- **Seconds to delay power ON status**<br/>
+(default = 30, range from 0 to 60)<br/>
+This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
+ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
 
 ## Custom configuration parameters
 
@@ -449,3 +464,16 @@ If you like the component, why don't you support me by buying me a coffe?
 It would certainly motivate me to further improve this work.
 
 [![Buy me a coffe!](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/ollo69)
+
+Credits
+-------
+
+This integration is developed by [Ollo69][ollo69] based on integration [SamsungTV Tizen][samsungtv_tizen].<br/>
+Original SamsungTV Tizen integration was developed by [jaruba][jaruba].<br/>
+Logo support is based on [jaruba channels-logo][channels-logo] and was developed with the support of [Screwdgeh][Screwdgeh].<br/>
+
+[ollo69]: https://github.com/ollo69
+[samsungtv_tizen]: https://github.com/jaruba/ha-samsungtv-tizen
+[jaruba]: https://github.com/jaruba
+[Screwdgeh]: https://github.com/Screwdgeh
+[channels-logo]: https://github.com/jaruba/channel-logos
