@@ -19,7 +19,7 @@ from .api.upnp import upnp
 
 from .logo import LOGO_OPTION_DEFAULT, Logo
 
-from homeassistant.components.media_player import DEVICE_CLASS_TV
+from homeassistant.components.media_player import DEVICE_CLASS_TV, MediaPlayerEntity
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
@@ -100,11 +100,6 @@ from .const import (
     PowerOnMethod,
 )
 from . import get_token_file
-
-try:
-    from homeassistant.components.media_player import MediaPlayerEntity
-except ImportError:
-    from homeassistant.components.media_player import MediaPlayerDevice as MediaPlayerEntity
 
 ATTR_ART_MODE_STATUS = "art_mode_status"
 ATTR_DEVICE_MODEL = "device_model"
@@ -192,7 +187,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     )
     platform.async_register_entity_service(
         SERVICE_SET_ART_MODE,
-        None,
+        {},
         "async_set_art_mode",
     )
 
@@ -210,12 +205,19 @@ class SamsungTVDevice(MediaPlayerEntity):
     def __init__(self, config, entry_id, session: ClientSession, token_file, logo_file):
         """Initialize the Samsung device."""
 
+        # Set entity attributes
+        self._attr_name = config.get(CONF_NAME)
+        self._attr_unique_id = config.get(CONF_ID)
+        self._attr_icon = "mdi:television"
+        self._attr_device_class = DEVICE_CLASS_TV
+        self._attr_supported_features = SUPPORT_SAMSUNGTV_SMART
+        self._attr_media_title = None
+        self._attr_media_image_url = None
+
         # Save a reference to the imported classes
         self._entry_id = entry_id
         self._session = session
         self._host = config.get(CONF_HOST)
-        self._name = config.get(CONF_NAME)
-        self._uuid = config.get(CONF_ID)
         self._mac = config.get(CONF_MAC)
         self._device_name = config.get(CONF_DEVICE_NAME)
         self._device_model = config.get(CONF_DEVICE_MODEL)
@@ -273,7 +275,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._delayed_set_source_time = None
         self._st_conn_error_count = 0
 
-        ws_name = config.get(CONF_WS_NAME, self._name)
+        ws_name = config.get(CONF_WS_NAME, self._attr_name)
         self._ws = SamsungTVWS(
             name=WS_PREFIX
             + " "
@@ -296,6 +298,7 @@ class SamsungTVDevice(MediaPlayerEntity):
                 use_channel_info=True,
                 session=session,
             )
+            self. _attr_supported_features |= SUPPORT_SELECT_SOUND_MODE
 
         self._st_error_count = 0
         self._setvolumebyst = False
@@ -306,8 +309,6 @@ class SamsungTVDevice(MediaPlayerEntity):
             logo_file_download=logo_file,
             session=session,
         )
-        self._media_title = None
-        self._media_image_url = None
 
     @staticmethod
     def _load_param_list(src_list):
@@ -544,7 +545,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         dump_apps = self._get_option(CONF_DUMP_APPS, False)
         if dump_apps:
             _LOGGER.info(
-                "List of available apps for SamsungTV %s: %s", self._name, dump_app_list
+                "List of available apps for SamsungTV %s: %s", self._attr_name, dump_app_list
             )
 
     def _get_source(self):
@@ -762,43 +763,19 @@ class SamsungTVDevice(MediaPlayerEntity):
             self.send_command, payload, command_type, key_press_delay, press
         )
 
-    @property
-    def unique_id(self) -> str:
-        """Return the unique ID of the device."""
-        return self._uuid
-
-    @property
-    def name(self):
-        """Return the name of the device."""
-        return self._name
-
-    @property
-    def icon(self):
-        return "mdi:television"
-
-    @property
-    def media_title(self):
-        """Title of current playing media."""
-        return self._media_title
-
-    @property
-    def media_image_url(self):
-        """Return the media image URL."""
-        return self._media_image_url
-
     async def _update_media(self):
         logo_option_changed = False
         new_media_title = self._get_new_media_title()
 
         if not new_media_title:
-            self._media_image_url = None
-            self._media_title = None
+            self._attr_media_image_url = None
+            self._attr_media_title = None
             return
 
         _LOGGER.debug(
             "New media title is: %s, old media title is: %s, running app is: %s",
             new_media_title,
-            self._media_title,
+            self._attr_media_title,
             self._running_app,
         )
 
@@ -808,12 +785,12 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._logo.set_logo_color(new_logo_option)
             logo_option_changed = True
 
-        if new_media_title == self._media_title and not logo_option_changed:
+        if new_media_title == self._attr_media_title and not logo_option_changed:
             return
 
         media_image_url = await self._logo.async_find_match(new_media_title)
-        self._media_image_url = media_image_url
-        self._media_title = new_media_title
+        self._attr_media_image_url = media_image_url
+        self._attr_media_title = new_media_title
 
     def _get_new_media_title(self):
         if self._state != STATE_ON:
@@ -933,19 +910,6 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._st:
             return self._st.sound_mode_list or None
         return None
-
-    @property
-    def supported_features(self):
-        """Flag media player features that are supported."""
-        features = SUPPORT_SAMSUNGTV_SMART
-        if self._st:
-            features |= SUPPORT_SELECT_SOUND_MODE
-        return features
-
-    @property
-    def device_class(self):
-        """Set the device class to TV."""
-        return DEVICE_CLASS_TV
 
     def _send_wol_packet(self, wol_repeat=None):
         if not self._mac:
@@ -1361,7 +1325,7 @@ class SamsungTVDevice(MediaPlayerEntity):
     def device_info(self):
         """Return a device description for device registry."""
         _device_info = {
-            "identifiers": {(DOMAIN, f"{self._uuid}")},
+            "identifiers": {(DOMAIN, f"{self._attr_unique_id}")},
             "manufacturer": "Samsung Electronics",
             "name": self.name,
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
@@ -1376,7 +1340,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         return _device_info
 
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         """Return the optional state attributes."""
         data = {
             ATTR_IP_ADDRESS: self._host
