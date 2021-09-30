@@ -60,7 +60,7 @@ from .logo import (
 )
 
 APP_LAUNCH_METHODS = {
-    AppLaunchMethod.Standard.value: "Standard Web Socket Channel",
+    AppLaunchMethod.Standard.value: "Control Web Socket Channel",
     AppLaunchMethod.Remote.value: "Remote Web Socket Channel",
     AppLaunchMethod.Rest.value: "Rest API Call",
 }

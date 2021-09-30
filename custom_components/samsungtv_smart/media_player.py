@@ -240,6 +240,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._source_list = source_list
 
         # load apps list
+        self._dump_apps = True
         app_list = SamsungTVDevice._load_param_list(
             config.get(CONF_APP_LIST)
         )
@@ -329,16 +330,15 @@ class SamsungTVDevice(MediaPlayerEntity):
     def _split_app_list(app_list, sep=ST_APP_SEPARATOR):
         retval = {"app": {}, "appST": {}}
 
-        for attr, value in app_list.items():
+        for app_name, value in app_list.items():
             value_split = value.split(sep, 1)
             app_id = value_split[0]
             if len(value_split) == 1:
-                st_app_id = STD_APP_LIST.get(app_id, "")
-                st_app_id = st_app_id if st_app_id != "" else app_id
+                st_app_id = STD_APP_LIST.get(app_id, app_id) or app_id
             else:
                 st_app_id = value_split[1]
-            retval["app"].update({attr: app_id})
-            retval["appST"].update({attr: st_app_id})
+            retval["app"][app_name] = app_id
+            retval["appST"][app_name] = st_app_id
 
         return retval
 
@@ -498,8 +498,12 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     @Throttle(MIN_TIME_BETWEEN_APP_SCANS)
     def _gen_installed_app_list(self, **kwargs):
-        if self._state != STATE_ON:
-            _LOGGER.debug("Samsung TV is OFF, _gen_installed_app_list not executed")
+        """Get apps installed on TV"""
+
+        if self._dump_apps:
+            self._dump_apps = self._get_option(CONF_DUMP_APPS, False)
+
+        if not (self._app_list is None or self._dump_apps):
             return
 
         app_list = self._ws.installed_app
@@ -511,42 +515,41 @@ class SamsungTVDevice(MediaPlayerEntity):
         )
 
         # app_list is a list of dict
-        clean_app_list = {}
-        clean_app_list_ST = {}
+        filtered_app_list = {}
+        filtered_app_list_st = {}
         dump_app_list = {}
         for app in app_list.values():
             try:
                 app_name = app.app_name
                 app_id = app.app_id
-                full_app_id = app_id
-                st_app_id = STD_APP_LIST.get(app_id, "###")
+                st_app_id = STD_APP_LIST.get(app_id)
                 # app_list is automatically created only with apps in hard coded short list (STD_APP_LIST)
                 # other available apps are dumped in a file that can be used to create a custom list
                 # this is to avoid unuseful long list that can impact performance
                 if app_load_method != AppLoadMethod.NotLoad:
-                    if st_app_id != "###" or app_load_method == AppLoadMethod.All:
-                        clean_app_list[app_name] = app_id
-                        clean_app_list_ST[app_name] = (
-                            st_app_id if st_app_id != "" else app_id
-                        )
-                        full_app_id = (
-                            app_id + ST_APP_SEPARATOR + st_app_id
-                            if st_app_id != "" and st_app_id != "###"
-                            else app_id
-                        )
+                    if app_id in STD_APP_LIST or app_load_method == AppLoadMethod.All:
+                        filtered_app_list[app_name] = app_id
+                        filtered_app_list_st[app_name] = st_app_id or app_id
 
-                dump_app_list[app_name] = full_app_id
+                dump_app_list[app_name] = (
+                    app_id + ST_APP_SEPARATOR + st_app_id
+                    if st_app_id else app_id
+                )
 
             except Exception:
                 pass
 
-        self._app_list = clean_app_list
-        self._app_list_ST = clean_app_list_ST
-        dump_apps = self._get_option(CONF_DUMP_APPS, False)
-        if dump_apps:
+        if self._app_list is None:
+            self._app_list = filtered_app_list
+            self._app_list_ST = filtered_app_list_st
+
+        if self._dump_apps:
             _LOGGER.info(
-                "List of available apps for SamsungTV %s: %s", self._attr_name, dump_app_list
+                "List of available apps for SamsungTV %s: %s",
+                self._attr_name,
+                dump_app_list,
             )
+            self._dump_apps = False
 
     def _get_source(self):
         """Return the current input source."""
@@ -873,9 +876,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._st and self._default_source_used:
             self._get_st_sources()
 
-        if self._app_list is None:
-            if self._ws.installed_app:
-                self._gen_installed_app_list()
+        self._gen_installed_app_list()
 
         source_list = []
         source_list.extend(list(self._source_list))
@@ -1056,13 +1057,13 @@ class SamsungTVDevice(MediaPlayerEntity):
         """Volume up the media player."""
         self.send_command("KEY_VOLUP")
         if self.support_volume_set:
-            self._volume = min(1, self._volume + 0.01)
+            self._volume = min(1.0, self._volume + 0.01)
 
     def volume_down(self):
         """Volume down media player."""
         self.send_command("KEY_VOLDOWN")
         if self.support_volume_set:
-            self._volume = max(0, self._volume - 0.01)
+            self._volume = max(0.0, self._volume - 0.01)
 
     def mute_volume(self, mute):
         """Send mute command."""
@@ -1288,17 +1289,17 @@ class SamsungTVDevice(MediaPlayerEntity):
                 self._delayed_set_source_time = datetime.now()
             return
 
-        if source in self._source_list:
+        if self._source_list and source in self._source_list:
             source_key = self._source_list[source]
             if not await self._async_send_keys(source_key):
                 return
-        elif source in self._app_list:
+        elif self._app_list and source in self._app_list:
             app_id = self._app_list[source]
             running_app = source
             await self._async_launch_app(app_id)
             if self._st:
                 self._st.set_application(self._app_list_ST[source])
-        elif source in self._channel_list:
+        elif self._channel_list and source in self._channel_list:
             source_key = self._channel_list[source]
             await self._async_set_channel(source_key)
             return

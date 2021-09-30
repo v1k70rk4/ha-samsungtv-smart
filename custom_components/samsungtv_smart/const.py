@@ -54,7 +54,7 @@ DEFAULT_APP = "TV/HDMI"
 DEFAULT_PORT = 8001
 DEFAULT_POWER_ON_DELAY = 30
 DEFAULT_SOURCE_LIST = {"TV": "KEY_TV", "HDMI": "KEY_HDMI"}
-DEFAULT_TIMEOUT = 5
+DEFAULT_TIMEOUT = 6
 
 MAX_WOL_REPEAT = 5
 
@@ -75,6 +75,7 @@ STD_APP_LIST = {
     "11101200001": "RN1MCdNq8t.Netflix",  # Netflix
     "111299001912": "9Ur5IzDKqV.TizenYouTube",  # YouTube
     "3201512006785": "org.tizen.ignition",  # Prime Video
+    # "3201512006785": "evKhCgZelL.AmazonIgnitionLauncher2",  # Prime Video
     "3201901017640": "MCmYXNxgcu.DisneyPlus",  # Disney+
     "11091000000": "4ovn894vo9.Facebook",  # Facebook
     "3201601007250": "QizQxC7CUf.PlayMovies",  # Google Play

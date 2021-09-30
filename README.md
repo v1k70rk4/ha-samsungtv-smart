@@ -165,14 +165,14 @@ with only the most common application, with `Not Load` application list will be 
 **Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
 
 - **Applications launch method used**<br/>
-Possible values: `Standard Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
+Possible values: `Control Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
 This option determine the mode used to launch applications.<br/>
 Use `Rest API Call` only if the other 2 methods do not work.<br/>
 
 - **Dump apps list on log file at startup**<br/>
 (default = False)<br/>
-When enabled the component will try to dump the list of available apps in the HA log file.
-The dump of the apps may not work, and in any case will not be executed if a custom `app_list` is defined.<br/>
+When enabled the component will try to dump the list of available apps on TV in the HA log file at Info level.
+The dump of the apps may not work for some TV models.<br/>
 
 - **Use volume mute status to detect fake power ON**<br/>
 (default = True)<br/>
