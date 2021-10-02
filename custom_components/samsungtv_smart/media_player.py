@@ -346,8 +346,8 @@ class SamsungTVDevice(MediaPlayerEntity):
         entry_id = self.hass.data.get(DOMAIN, {}).get(self._entry_id)
         if not entry_id:
             return default
-        options = entry_id.get("options", {})
-        return options.get(param, default)
+        option = entry_id.get("options", {}).get(param)
+        return default if option is None else option
 
     def _power_off_in_progress(self):
         return (

@@ -400,7 +400,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             LOGO_OPTIONS, data.pop(OPT_LOGO_OPTION, None)
         )
         data.update(self._adv_options)
-        return self.async_create_entry(title="", data=data)
+
+        entry_data = {k: v for k, v in data.items() if v is not None}
+        return self.async_create_entry(title="", data=entry_data)
 
     async def async_step_init(self, user_input: dict = None):
         """Handle options flow."""
