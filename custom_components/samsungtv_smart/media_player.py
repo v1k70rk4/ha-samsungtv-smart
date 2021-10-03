@@ -1,23 +1,19 @@
 """Support for interface with an Samsung TV."""
-import asyncio
-import json
-import logging
-from datetime import datetime, timedelta
-from socket import error as socketError
-from time import sleep
-from wakeonlan import send_magic_packet
-from websocket import WebSocketTimeoutException
-
-import voluptuous as vol
-
 from aiohttp import ClientConnectionError, ClientSession, ClientResponseError
 from async_timeout import timeout
+import asyncio
+from datetime import datetime, timedelta
+import json
+import logging
+from socket import error as socketError
+from time import sleep
+import voluptuous as vol
+from wakeonlan import send_magic_packet
+from websocket import WebSocketTimeoutException
 
 from .api.samsungws import SamsungTVWS, ArtModeStatus
 from .api.smartthings import SmartThingsTV, STStatus
 from .api.upnp import upnp
-
-from .logo import LOGO_OPTION_DEFAULT, Logo
 
 from homeassistant.components.media_player import DEVICE_CLASS_TV, MediaPlayerEntity
 from homeassistant.exceptions import HomeAssistantError
@@ -64,6 +60,7 @@ from homeassistant.const import (
     STATE_UNAVAILABLE,
 )
 
+from . import get_token_file
 from .const import (
     DOMAIN,
     CONF_APP_LAUNCH_METHOD,
@@ -86,6 +83,7 @@ from .const import (
     CONF_WOL_REPEAT,
     CONF_WS_NAME,
     CONF_LOGO_OPTION,
+    DATA_OPTIONS,
     DEFAULT_APP,
     DEFAULT_POWER_ON_DELAY,
     DEFAULT_SOURCE_LIST,
@@ -99,7 +97,7 @@ from .const import (
     AppLaunchMethod,
     PowerOnMethod,
 )
-from . import get_token_file
+from .logo import LOGO_OPTION_DEFAULT, Logo
 
 ATTR_ART_MODE_STATUS = "art_mode_status"
 ATTR_DEVICE_MODEL = "device_model"
@@ -346,7 +344,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         entry_id = self.hass.data.get(DOMAIN, {}).get(self._entry_id)
         if not entry_id:
             return default
-        option = entry_id.get("options", {}).get(param)
+        option = entry_id[DATA_OPTIONS].get(param)
         return default if option is None else option
 
     def _power_off_in_progress(self):

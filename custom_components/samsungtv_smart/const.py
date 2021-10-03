@@ -21,6 +21,7 @@ class PowerOnMethod(Enum):
 
 DOMAIN = "samsungtv_smart"
 
+DATA_OPTIONS = "options"
 WS_PREFIX = "[Home Assistant]"
 
 CONF_APP_LAUNCH_METHOD = "app_launch_method"
