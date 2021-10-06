@@ -16,10 +16,6 @@ from .api.smartthings import SmartThingsTV
 
 from homeassistant.components.media_player.const import DOMAIN as MP_DOMAIN
 from homeassistant.config_entries import ConfigEntry
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.storage import STORAGE_DIR
-from homeassistant.helpers.typing import HomeAssistantType
-
 from homeassistant.const import (
     CONF_API_KEY,
     CONF_BROADCAST_ADDRESS,
@@ -30,6 +26,10 @@ from homeassistant.const import (
     CONF_PORT,
     CONF_TIMEOUT,
 )
+from homeassistant.core import HomeAssistant
+import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.storage import STORAGE_DIR
+from homeassistant.helpers.typing import ConfigType
 
 from .const import (
     DOMAIN,
@@ -154,7 +154,7 @@ def remove_token_file(hass, hostname):
             )
 
 
-def _migrate_token_file(hass: HomeAssistantType, hostname: str):
+def _migrate_token_file(hass: HomeAssistant, hostname: str):
     """Migrate token file from old path to new one."""
 
     token_file = hass.config.path(STORAGE_DIR, token_file_name(hostname))
@@ -297,7 +297,7 @@ class SamsungTVInfo:
 
         device_id = device.get("id")
         if device_id and device_id.startswith("uuid:"):
-            self._uuid = device_id[len("uuid:") :]
+            self._uuid = device_id[len("uuid:"):]
         else:
             self._uuid = device_id
         self._macaddress = device.get("wifiMac")
@@ -311,7 +311,7 @@ class SamsungTVInfo:
         return result
 
 
-async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
+async def async_setup(hass: HomeAssistant, config: ConfigType):
     """Set up the Samsung TV integration."""
     if DOMAIN in config:
         hass.data[DOMAIN] = {}
@@ -330,56 +330,52 @@ async def async_setup(hass: HomeAssistantType, config: ConfigEntry):
                 )
                 continue
 
-            hass.data[DOMAIN].setdefault(ip_address, {})
-            for key in SAMSMART_SCHEMA:
-                value = entry_config.get(key)
-                if value:
-                    hass.data[DOMAIN][ip_address][key] = value
+            hass.data[DOMAIN][ip_address] = {
+                key: value
+                for key, value in entry_config.items()
+                if key in SAMSMART_SCHEMA and value
+            }
 
     return True
 
 
-async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up the Samsung TV platform."""
 
     # migrate old token file if required
     _migrate_token_file(hass, entry.unique_id)
 
     # setup entry
-    hass.data.setdefault(DOMAIN, {}).setdefault(
-        entry.unique_id, {}
-    )  # unique_id = host
-    hass.data[DOMAIN].setdefault(
-        entry.entry_id,
-        {
-            DATA_OPTIONS: entry.options.copy(),
-            DATA_LISTENER: [entry.add_update_listener(update_listener)],
-        }
-    )
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN].setdefault(entry.unique_id, {})  # unique_id = host
+    hass.data[DOMAIN][entry.entry_id] = {
+        DATA_OPTIONS: entry.options.copy(),
+        DATA_LISTENER: entry.add_update_listener(update_listener),
+    }
 
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, MP_DOMAIN)
-    )
+    hass.config_entries.async_setup_platforms(entry, [MP_DOMAIN])
 
     return True
 
 
-async def async_unload_entry(hass, config_entry):
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
-    await asyncio.gather(
-        *[hass.config_entries.async_forward_entry_unload(config_entry, MP_DOMAIN)]
+    unload_ok = await hass.config_entries.async_unload_platforms(
+        entry, [MP_DOMAIN]
     )
-    for listener in hass.data[DOMAIN][config_entry.entry_id][DATA_LISTENER]:
-        listener()
-    remove_token_file(hass, config_entry.unique_id)
-    hass.data[DOMAIN].pop(config_entry.entry_id)
-    hass.data[DOMAIN].pop(config_entry.unique_id)
-    if not hass.data[DOMAIN]:
-        hass.data.pop(DOMAIN)
-    return True
+
+    if unload_ok:
+        hass.data[DOMAIN][entry.entry_id][DATA_LISTENER]()
+        remove_token_file(hass, entry.unique_id)
+        hass.data[DOMAIN].pop(entry.entry_id)
+        hass.data[DOMAIN].pop(entry.unique_id)
+        if not hass.data[DOMAIN]:
+            hass.data.pop(DOMAIN)
+
+    return unload_ok
 
 
-async def update_listener(hass, config_entry):
+async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Update when config_entry options update."""
-    entry_id = config_entry.entry_id
-    hass.data[DOMAIN][entry_id][DATA_OPTIONS] = config_entry.options.copy()
+    entry_id = entry.entry_id
+    hass.data[DOMAIN][entry_id][DATA_OPTIONS] = entry.options.copy()

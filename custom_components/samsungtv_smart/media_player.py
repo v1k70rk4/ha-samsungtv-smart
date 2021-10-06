@@ -44,6 +44,11 @@ from homeassistant.components.media_player.const import (
 )
 
 from homeassistant.const import (
+    ATTR_IDENTIFIERS,
+    ATTR_MANUFACTURER,
+    ATTR_MODEL,
+    ATTR_NAME,
+    ATTR_SW_VERSION,
     CONF_API_KEY,
     CONF_BROADCAST_ADDRESS,
     CONF_DEVICE_ID,
@@ -1323,20 +1328,20 @@ class SamsungTVDevice(MediaPlayerEntity):
     @property
     def device_info(self):
         """Return a device description for device registry."""
-        _device_info = {
-            "identifiers": {(DOMAIN, f"{self._attr_unique_id}")},
-            "manufacturer": "Samsung Electronics",
-            "name": self.name,
+        dev_info = {
+            ATTR_IDENTIFIERS: {(DOMAIN, f"{self._attr_unique_id}")},
+            ATTR_MANUFACTURER: "Samsung Electronics",
+            ATTR_NAME: self.name,
             "connections": {(CONNECTION_NETWORK_MAC, self._mac)},
         }
-        model = self._device_model if self._device_model else "Samsung TV"
+        model = self._device_model or "Samsung TV"
         if self._device_name:
-            model = "%s (%s)" % (model, self._device_name)
-        _device_info["model"] = model
+            model = f"{model} ({self._device_name})"
+        dev_info[ATTR_MODEL] = model
         if self._device_os:
-            _device_info["sw_version"] = self._device_os
+            dev_info[ATTR_SW_VERSION] = self._device_os
 
-        return _device_info
+        return dev_info
 
     @property
     def extra_state_attributes(self):
