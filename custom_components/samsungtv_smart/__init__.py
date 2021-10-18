@@ -17,6 +17,7 @@ from .api.smartthings import SmartThingsTV
 from homeassistant.components.media_player.const import DOMAIN as MP_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    ATTR_DEVICE_ID,
     CONF_API_KEY,
     CONF_BROADCAST_ADDRESS,
     CONF_DEVICE_ID,
@@ -32,9 +33,10 @@ from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
-    DOMAIN,
-    DEFAULT_PORT,
-    DEFAULT_TIMEOUT,
+    ATTR_DEVICE_MAC,
+    ATTR_DEVICE_MODEL,
+    ATTR_DEVICE_NAME,
+    ATTR_DEVICE_OS,
     CONF_APP_LIST,
     CONF_CHANNEL_LIST,
     CONF_DEVICE_NAME,
@@ -46,15 +48,26 @@ from .const import (
     CONF_UPDATE_CUSTOM_PING_URL,
     CONF_SCAN_APP_HTTP,
     DATA_OPTIONS,
+    DEFAULT_PORT,
+    DEFAULT_TIMEOUT,
     DEFAULT_SOURCE_LIST,
-    WS_PREFIX,
+    DOMAIN,
     RESULT_NOT_SUCCESSFUL,
     RESULT_NOT_SUPPORTED,
     RESULT_ST_DEVICE_NOT_FOUND,
     RESULT_SUCCESS,
     RESULT_WRONG_APIKEY,
+    WS_PREFIX,
     AppLoadMethod,
 )
+
+DEVICE_INFO = {
+    ATTR_DEVICE_ID: "id",
+    ATTR_DEVICE_MAC: "wifiMac",
+    ATTR_DEVICE_NAME: "name",
+    ATTR_DEVICE_MODEL: "modelName",
+    ATTR_DEVICE_OS: "OS",
+}
 
 SAMSMART_SCHEMA = {
     vol.Optional(CONF_SOURCE_LIST, default=DEFAULT_SOURCE_LIST): cv.string,
@@ -180,20 +193,48 @@ def _migrate_token_file(hass: HomeAssistant, hostname: str):
     return
 
 
+async def get_device_info(hostname: str, session: ClientSession) -> dict:
+    """Try retrieve device information"""
+    try:
+        with timeout(2):
+            async with session.get(
+                    tv_url(host=hostname),
+                    raise_for_status=True
+            ) as resp:
+                info = await resp.json()
+    except (asyncio.TimeoutError, ClientConnectionError):
+        _LOGGER.warning("Error getting HTTP device info for TV: " + hostname)
+        return {}
+
+    device = info.get("device")
+    if not device:
+        _LOGGER.warning("Error getting HTTP device info for TV: " + hostname)
+        return {}
+
+    result = {
+        key: device[value]
+        for key, value in DEVICE_INFO.items()
+        if value in device
+    }
+
+    if ATTR_DEVICE_ID in result:
+        device_id = result[ATTR_DEVICE_ID]
+        if device_id.startswith("uuid:"):
+            result[ATTR_DEVICE_ID] = device_id[len("uuid:"):]
+
+    return result
+
+
 class SamsungTVInfo:
-    def __init__(self, hass, hostname, name, ws_name=None):
+    def __init__(self, hass, hostname, ws_name):
         self._hass = hass
         self._hostname = hostname
-        self._name = name
-        self._ws_name = ws_name if ws_name else name
+        self._ws_name = ws_name
+        self._ws_port = 0
 
-        self._uuid = None
-        self._macaddress = None
-        self._device_name = None
-        self._device_model = None
-        self._device_os = None
-        self._token_support = False
-        self._port = 0
+    @property
+    def ws_port(self):
+        return self._ws_port
 
     def _try_connect_ws(self):
         """Try to connect to device using web sockets on port 8001 and 8002"""
@@ -208,9 +249,7 @@ class SamsungTVInfo:
                 )
                 token_file = get_token_file(self._hass, self._hostname, port, True)
                 with SamsungTVWS(
-                    name=WS_PREFIX
-                    + " "
-                    + self._ws_name,  # this is the name shown in the TV list of external device.
+                    name=f"{WS_PREFIX} {self._ws_name}",  # this is the name shown in the TV list of external device.
                     host=self._hostname,
                     port=port,
                     token_file=token_file,
@@ -218,7 +257,7 @@ class SamsungTVInfo:
                 ) as remote:
                     remote.open()
                 _LOGGER.info("Found working configuration using port %s", str(port))
-                self._port = port
+                self._ws_port = port
                 return RESULT_SUCCESS
             except (OSError, ConnectionFailure, WebSocketException) as err:
                 _LOGGER.info("Configuration failed using port %s, error: %s", str(port), err)
@@ -226,7 +265,8 @@ class SamsungTVInfo:
         _LOGGER.error("Web socket connection to SamsungTV %s failed", self._hostname)
         return RESULT_NOT_SUCCESSFUL
 
-    async def _try_connect_st(self, api_key, device_id, session: ClientSession):
+    @staticmethod
+    async def _try_connect_st(api_key, device_id, session: ClientSession):
         """Try to connect to ST device"""
 
         try:
@@ -268,45 +308,17 @@ class SamsungTVInfo:
 
         return devices
 
-    async def get_device_info(
+    async def try_connect(
         self, session: ClientSession, api_key=None, st_device_id=None
     ):
-        """Get device information"""
-
+        """Try connect device"""
         if session is None:
             return RESULT_NOT_SUCCESSFUL
 
         result = await self._hass.async_add_executor_job(self._try_connect_ws)
-        if result != RESULT_SUCCESS:
-            return result
-
-        try:
-            with timeout(2):
-                async with session.get(
-                    tv_url(host=self._hostname),
-                    raise_for_status=True
-                ) as resp:
-                    info = await resp.json()
-        except (asyncio.TimeoutError, ClientConnectionError):
-            _LOGGER.error("Error getting HTTP info for TV: " + self._hostname)
-            return RESULT_NOT_SUCCESSFUL
-
-        device = info.get("device", None)
-        if not device:
-            return RESULT_NOT_SUCCESSFUL
-
-        device_id = device.get("id")
-        if device_id and device_id.startswith("uuid:"):
-            self._uuid = device_id[len("uuid:"):]
-        else:
-            self._uuid = device_id
-        self._macaddress = device.get("wifiMac")
-        self._device_name = device.get("name")
-        self._device_model = device.get("modelName")
-        self._device_os = device.get("OS")
-        self._token_support = device.get("TokenAuthSupport")
-        if api_key and st_device_id:
-            result = await self._try_connect_st(api_key, st_device_id, session)
+        if result == RESULT_SUCCESS:
+            if api_key and st_device_id:
+                result = await self._try_connect_st(api_key, st_device_id, session)
 
         return result
 
