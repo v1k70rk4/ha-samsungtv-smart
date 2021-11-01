@@ -8,10 +8,12 @@ import logging
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant.components.binary_sensor import DOMAIN as BS_DOMAIN
+from homeassistant.core import callback, HomeAssistant
 
 from homeassistant.const import (
     ATTR_DEVICE_ID,
+    ATTR_FRIENDLY_NAME,
     CONF_API_KEY,
     CONF_DEVICE_ID,
     CONF_HOST,
@@ -20,6 +22,7 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PORT,
 )
+from homeassistant.helpers import config_validation as cv
 
 # pylint:disable=unused-import
 from . import SamsungTVInfo, get_device_info
@@ -35,6 +38,8 @@ from .const import (
     CONF_DEVICE_MODEL,
     CONF_DEVICE_OS,
     CONF_DUMP_APPS,
+    CONF_EXT_POWER_ENTITY,
+    CONF_LOGO_OPTION,
     CONF_POWER_ON_DELAY,
     CONF_POWER_ON_METHOD,
     CONF_USE_ST_CHANNEL_INFO,
@@ -45,13 +50,13 @@ from .const import (
     CONF_SYNC_TURN_ON,
     CONF_WOL_REPEAT,
     CONF_WS_NAME,
-    CONF_LOGO_OPTION,
     DEFAULT_POWER_ON_DELAY,
     MAX_WOL_REPEAT,
     RESULT_ST_DEVICE_NOT_FOUND,
     RESULT_ST_DEVICE_USED,
     RESULT_SUCCESS,
     RESULT_WRONG_APIKEY,
+    SERVICE_TURN_ON,
     AppLaunchMethod,
     AppLoadMethod,
     PowerOnMethod,
@@ -97,6 +102,7 @@ ADVANCED_OPTIONS = [
     CONF_APP_LOAD_METHOD,
     CONF_APP_LAUNCH_METHOD,
     CONF_DUMP_APPS,
+    CONF_EXT_POWER_ENTITY,
     CONF_WOL_REPEAT,
     CONF_POWER_ON_DELAY,
     CONF_USE_MUTE_CHECK,
@@ -386,6 +392,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return await self.async_step_adv_opt()
             return self._save_entry(data=user_input)
 
+        switch_entities = _async_get_matching_entities(
+            self.hass,
+            _async_get_domains_service(self.hass, SERVICE_TURN_ON),
+            _async_get_entry_entities(self.hass, self.config_entry.entry_id),
+        )
         options = self.config_entry.options
         data_schema = vol.Schema({})
 
@@ -432,19 +443,15 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_SYNC_TURN_OFF,
                     description={
-                        "suggested_value": options.get(
-                            CONF_SYNC_TURN_OFF, ""
-                        )
+                        "suggested_value": options.get(CONF_SYNC_TURN_OFF)
                     },
-                ): str,
+                ): cv.multi_select(switch_entities),
                 vol.Optional(
                     CONF_SYNC_TURN_ON,
                     description={
-                        "suggested_value": options.get(
-                            CONF_SYNC_TURN_ON, ""
-                        )
+                        "suggested_value": options.get(CONF_SYNC_TURN_ON)
                     },
-                ): str,
+                ): cv.multi_select(switch_entities),
                 vol.Optional(CONF_SHOW_ADV_OPT, default=False): bool,
             }
         )
@@ -460,7 +467,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             user_input[CONF_APP_LAUNCH_METHOD] = _get_key_from_value(
                 APP_LAUNCH_METHODS, user_input.pop(OPT_APP_LAUNCH_METHOD, None)
             )
-            self._adv_options.update(user_input)
+            self._adv_options = user_input
             return await self.async_step_init()
 
         return self._async_adv_opt_form()
@@ -468,7 +475,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     @callback
     def _async_adv_opt_form(self):
         """Return configuration form for advanced options."""
+        external_entities = _async_get_matching_entities(
+            self.hass, [BS_DOMAIN]
+        )
         options = self._adv_options
+
         data_schema = vol.Schema(
             {
                 vol.Optional(
@@ -508,6 +519,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_POWER_ON_DELAY, DEFAULT_POWER_ON_DELAY
                     ),
                 ): vol.All(vol.Coerce(int), vol.Clamp(min=0, max=60)),
+                vol.Optional(
+                    CONF_EXT_POWER_ENTITY,
+                    description={
+                        "suggested_value": options.get(CONF_EXT_POWER_ENTITY)
+                    }
+                ): vol.In(external_entities),
             }
         )
 
@@ -521,3 +538,36 @@ def _get_key_from_value(source: dict, value: str):
             if src_value == value:
                 return src_key
     return None
+
+
+def _async_get_matching_entities(hass: HomeAssistant, domains=None, excl_entities=None):
+    """Fetch all entities or entities in the given domains."""
+    return {
+        state.entity_id: f"{state.attributes.get(ATTR_FRIENDLY_NAME, state.entity_id)} ({state.entity_id})"
+        for state in sorted(
+            hass.states.async_all(domains and set(domains)),
+            key=lambda item: item.entity_id,
+        )
+        if state.entity_id not in (excl_entities or [])
+    }
+
+
+def _async_get_domains_service(hass: HomeAssistant, service_name: str):
+    """Fetch list of domain that provide a specific service."""
+    return [
+        domain
+        for domain, service in hass.services.async_services().items()
+        if service_name in service
+    ]
+
+
+def _async_get_entry_entities(hass: HomeAssistant, entry_id: str):
+    """Get the entities related to current entry"""
+    return [
+        entry.entity_id
+        for entry in (
+            hass.helpers.entity_registry.async_entries_for_config_entry(
+                hass.helpers.entity_registry.async_get(hass), entry_id
+            )
+        )
+    ]

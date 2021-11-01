@@ -144,12 +144,12 @@ This is required for the component to know the name of the TV channel.<br/>
 Check guide [here](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Logos.md) 
 for updating the logo database this component is relying on.
 
-- **List of entity to Power OFF with TV (comma separated)**<br/>
-A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). 
+- **List of entity to Power OFF with TV**<br/>
+A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). Select entities from list. 
 This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>
 
-- **List of entity to Power ON with TV (comma separated)**<br/>
-A list of HA entity to Turn ON when the TV entity is turned ON (maximum 4).
+- **List of entity to Power ON with TV**<br/>
+A list of HA entity to Turn ON when the TV entity is turned ON (maximum 4).  Select entities from list.
 This call the service `homeassistant.turn_on` for maximum the first 4 entity in the provided list.<br/>
 
 - **Show advanced options**<br/>
@@ -188,6 +188,12 @@ until the TV properly turn-on.<br/>
 (default = 30, range from 0 to 60)<br/>
 This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
 ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
+
+- **Binary sensor to help detect power status**<br/>
+An external `binary_sensor` selectable from a list than can be used to determinate TV power status.<br/>
+This can be any available `binary_sensor` that can better determinate the status of the TV, for example a 
+`binary_sensor` based on TV power consumption. It is suggested to not use a sensor based on `ping` platform
+because this method is already implemented by the integration.</br>
 
 ## Custom configuration parameters
 
