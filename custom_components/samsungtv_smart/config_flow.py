@@ -22,7 +22,7 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PORT,
 )
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, entity_registry as er
 
 # pylint:disable=unused-import
 from . import SamsungTVInfo, get_device_info
@@ -397,7 +397,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             _async_get_domains_service(self.hass, SERVICE_TURN_ON),
             _async_get_entry_entities(self.hass, self.config_entry.entry_id),
         )
-        options = self.config_entry.options
+        options = _validate_options(self.config_entry.options, switch_entities)
         data_schema = vol.Schema({})
 
         if self._use_st:
@@ -531,6 +531,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(step_id="adv_opt", data_schema=data_schema)
 
 
+def _validate_options(options: dict, sw_ent: dict):
+    """Validate options format"""
+    valid_options = {}
+    for opt_key, opt_val in options.items():
+        if opt_key in [CONF_SYNC_TURN_OFF, CONF_SYNC_TURN_ON]:
+            if isinstance(opt_val, list):
+                valid_options[opt_key] = [k for k in opt_val if k in sw_ent]
+            continue
+        valid_options[opt_key] = opt_val
+    return valid_options
+
+
 def _get_key_from_value(source: dict, value: str):
     """Get dict key from corresponding value."""
     if value:
@@ -566,8 +578,8 @@ def _async_get_entry_entities(hass: HomeAssistant, entry_id: str):
     return [
         entry.entity_id
         for entry in (
-            hass.helpers.entity_registry.async_entries_for_config_entry(
-                hass.helpers.entity_registry.async_get(hass), entry_id
+            er.async_entries_for_config_entry(
+                er.async_get(hass), entry_id
             )
         )
     ]
