@@ -40,7 +40,7 @@ class upnp:
                 </s:Envelope>"""
         response = None
         try:
-            with timeout(DEFAULT_TIMEOUT):
+            async with timeout(DEFAULT_TIMEOUT):
                 async with self._session.post(
                     f"http://{self._host}:9197/upnp/control/{protocole}1",
                     headers=headers,

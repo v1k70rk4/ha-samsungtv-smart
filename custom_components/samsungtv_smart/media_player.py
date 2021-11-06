@@ -675,7 +675,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._st:
             use_channel_info = self._get_option(CONF_USE_ST_CHANNEL_INFO, True)
             try:
-                with timeout(ST_UPDATE_TIMEOUT):
+                async with timeout(ST_UPDATE_TIMEOUT):
                     await self._st.async_device_update(use_channel_info)
                 self._st_error_count = 0
             except (
