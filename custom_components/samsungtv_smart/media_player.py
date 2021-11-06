@@ -1,7 +1,7 @@
 """Support for interface with an Samsung TV."""
 from aiohttp import ClientConnectionError, ClientSession, ClientResponseError
-from async_timeout import timeout
 import asyncio
+import async_timeout
 from datetime import datetime, timedelta
 import json
 import logging
@@ -675,7 +675,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._st:
             use_channel_info = self._get_option(CONF_USE_ST_CHANNEL_INFO, True)
             try:
-                async with timeout(ST_UPDATE_TIMEOUT):
+                async with async_timeout.timeout(ST_UPDATE_TIMEOUT):
                     await self._st.async_device_update(use_channel_info)
                 self._st_error_count = 0
             except (
