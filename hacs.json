@@ -1,5 +1,7 @@
 {
   "name": "SamsungTV Smart",
+  "content_in_root": false,
   "domains": ["media-player"],
-  "iot_class": "Cloud Polling"
+  "iot_class": "cloud_poll",
+  "homeassistant": "2021.7.0"
 }
