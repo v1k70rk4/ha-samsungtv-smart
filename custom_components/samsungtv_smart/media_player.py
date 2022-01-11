@@ -398,7 +398,7 @@ class SamsungTVDevice(MediaPlayerEntity):
     def _update_forced(self):
         """Check if a forced update is required."""
         if self._set_update_forced:
-            self._update_forced_time = datetime.now()
+            self._update_forced_time = datetime.utcnow()
             self._power_on_detected = datetime.min
             self._set_update_forced = False
             return False
@@ -406,7 +406,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         if not self._update_forced_time:
             return False
 
-        call_time = datetime.now()
+        call_time = datetime.utcnow()
         difference = (call_time - self._update_forced_time).total_seconds()
         if difference >= 10:
             self._update_forced_time = None
@@ -423,8 +423,8 @@ class SamsungTVDevice(MediaPlayerEntity):
 
             if power_on_delay > 0:
                 if not self._power_on_detected:
-                    self._power_on_detected = datetime.now()
-                difference = (datetime.now() - self._power_on_detected).total_seconds()
+                    self._power_on_detected = datetime.utcnow()
+                difference = (datetime.utcnow() - self._power_on_detected).total_seconds()
                 if difference < power_on_delay:
                     return False
         else:
@@ -750,7 +750,7 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         if self.state == STATE_ON:  # NB: We are checking properties, not attribute!
             if self._delayed_set_source:
-                difference = (datetime.now() - self._delayed_set_source_time).total_seconds()
+                difference = (datetime.utcnow() - self._delayed_set_source_time).total_seconds()
                 if difference > DELAYED_SOURCE_TIMEOUT:
                     self._delayed_set_source = None
                 else:
@@ -1364,7 +1364,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self.state != STATE_ON:
             if await self._async_turn_on():
                 self._delayed_set_source = source
-                self._delayed_set_source_time = datetime.now()
+                self._delayed_set_source_time = datetime.utcnow()
             return
 
         if self._source_list and source in self._source_list:

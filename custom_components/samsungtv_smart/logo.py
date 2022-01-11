@@ -103,7 +103,7 @@ class Logo:
         """ Does check if logo paths file exists and if it does - is it out of date or not. """
         if (
             self._last_check is not None and
-            self._last_check > datetime.now().astimezone()-timedelta(days=LOGO_FILE_DAYS_BEFORE_UPDATE)
+            self._last_check > datetime.utcnow().astimezone()-timedelta(days=LOGO_FILE_DAYS_BEFORE_UPDATE)
         ):
             return
         if self._media_image_base_url is not None:
@@ -112,7 +112,7 @@ class Logo:
                     os.path.getmtime(self._logo_file_download_path)
                 ).astimezone()
                 if file_date < (
-                    datetime.now().astimezone()
+                    datetime.utcnow().astimezone()
                     - timedelta(days=LOGO_FILE_DAYS_BEFORE_UPDATE)
                 ):
                     try:
@@ -124,7 +124,7 @@ class Logo:
                                 "%a, %d %b %Y %X %Z",
                             ).astimezone()
                             if url_date > file_date:
-                                self._last_check = datetime.now().astimezone()
+                                self._last_check = datetime.utcnow().astimezone()
                                 await self._download_latest_path_file()
                     except (aiohttp.ClientError, asyncio.TimeoutError):
                         _LOGGER.warning(
@@ -134,7 +134,7 @@ class Logo:
                             "logo_paths.json",
                         )
             else:
-                self._last_check = datetime.now().astimezone()
+                self._last_check = datetime.utcnow().astimezone()
                 await self._download_latest_path_file()
 
     async def _download_latest_path_file(self):

@@ -288,7 +288,7 @@ class SamsungTVWS:
 
         if using_remote:
             # we consider a message sent valid as a ping
-            self._last_ping = datetime.now()
+            self._last_ping = datetime.utcnow()
 
         if key_press_delay is None:
             if self.key_press_delay > 0:
@@ -378,7 +378,7 @@ class SamsungTVWS:
 
     def _on_ping_remote(self, _, payload):
         _LOGGING.debug("Received WS remote ping %s, sending pong", payload)
-        self._last_ping = datetime.now()
+        self._last_ping = datetime.utcnow()
         if self._ws_remote.sock:
             try:
                 self._ws_remote.sock.pong(payload)
@@ -393,7 +393,7 @@ class SamsungTVWS:
             return
 
         # we consider a message valid as a ping
-        self._last_ping = datetime.now()
+        self._last_ping = datetime.utcnow()
 
         if event == "ms.channel.connect":
             conn_data = response.get("data")
@@ -463,7 +463,7 @@ class SamsungTVWS:
 
     def _on_ping_control(self, _, payload):
         _LOGGING.debug("Received WS control ping %s, sending pong", payload)
-        self._last_control_ping = datetime.now()
+        self._last_control_ping = datetime.utcnow()
         if self._ws_control.sock:
             try:
                 self._ws_control.sock.pong(payload)
@@ -589,7 +589,7 @@ class SamsungTVWS:
 
     def _on_ping_art(self, _, payload):
         _LOGGING.debug("Received WS art ping %s, sending pong", payload)
-        self._last_art_ping = datetime.now()
+        self._last_art_ping = datetime.utcnow()
         if self._ws_art.sock:
             try:
                 self._ws_art.sock.pong(payload)
@@ -604,7 +604,7 @@ class SamsungTVWS:
             return
 
         # we consider a message valid as a ping
-        self._last_art_ping = datetime.now()
+        self._last_art_ping = datetime.utcnow()
 
         if event == "ms.channel.connect":
             conn_data = response.get("data")
@@ -694,7 +694,7 @@ class SamsungTVWS:
     def ping_device(self):
         result = self._ping.ping()
         # check ws ping/pong
-        call_time = datetime.now()
+        call_time = datetime.utcnow()
         if result and self._ws_remote:
             difference = (call_time - self._last_ping).total_seconds()
             result = difference < MAX_WS_PING_INTERVAL
@@ -717,7 +717,7 @@ class SamsungTVWS:
         if self._artmode_status == ArtModeStatus.Unsupported:
             return
         if self._ws_art:
-            difference = (datetime.now() - self._last_art_ping).total_seconds()
+            difference = (datetime.utcnow() - self._last_art_ping).total_seconds()
             if difference >= MAX_WS_PING_INTERVAL:
                 self._artmode_status = ArtModeStatus.Unavailable
                 self._ws_art.close()
@@ -726,7 +726,7 @@ class SamsungTVWS:
 
     def set_power_on_request(self, set_art_mode=False, power_on_delay=0):
         self._power_on_requested = True
-        self._power_on_requested_time = datetime.now()
+        self._power_on_requested_time = datetime.utcnow()
         self._power_on_artmode = set_art_mode
         self._power_on_delay = max(power_on_delay, 0) or DEFAULT_POWER_ON_DELAY
 
@@ -739,7 +739,7 @@ class SamsungTVWS:
             return
 
         with self._sync_lock:
-            call_time = datetime.now()
+            call_time = datetime.utcnow()
             difference = (call_time - self._last_app_scan).total_seconds()
             if (difference < MIN_APP_SCAN_INTERVAL and not force_scan) or difference < 1:
                 return
