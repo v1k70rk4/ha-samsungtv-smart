@@ -863,6 +863,9 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._logo.set_logo_color(new_logo_option)
             logo_option_changed = True
 
+        if not logo_option_changed:
+            logo_option_changed = self._logo.check_requested()
+
         if new_media_title == self._attr_media_title and not logo_option_changed:
             return
 
