@@ -866,8 +866,9 @@ class SamsungTVDevice(MediaPlayerEntity):
         if not logo_option_changed:
             logo_option_changed = self._logo.check_requested()
 
-        if new_media_title == self._attr_media_title and not logo_option_changed:
-            return
+        if not logo_option_changed:
+            if self._attr_media_title and new_media_title == self._attr_media_title:
+                return
 
         media_image_url = await self._logo.async_find_match(new_media_title)
         self._attr_media_image_url = media_image_url
@@ -891,13 +892,17 @@ class SamsungTVDevice(MediaPlayerEntity):
                         return self._st.channel_name
                     if self._st.channel != "":
                         return self._st.channel
+                    return None
 
                 elif self._st.channel_name != "":
                     # the channel name holds the running app ID
                     # regardless of the self._cloud_source value
                     return self._st.channel_name
 
-        return self._get_source()
+        media_title = self._get_source()
+        if media_title and media_title != DEFAULT_APP:
+            return media_title
+        return None
 
     @property
     def media_channel(self):
