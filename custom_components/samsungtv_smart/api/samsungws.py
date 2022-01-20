@@ -26,6 +26,7 @@ from enum import Enum
 import json
 import logging
 import requests
+import socket
 import ssl
 import subprocess
 import sys
@@ -84,7 +85,13 @@ class Ping:
         else:
             self._ping_cmd = ["ping", "-n", "-q", "-c1", "-W2", host]
 
-    def ping(self):
+    def ping(self, port=0):
+        """Check if IP is available using ICMP or trying open a specific port."""
+        if port > 0:
+            return self._ping_socket(port)
+        return self._ping()
+
+    def _ping(self):
         """Send ICMP echo request and return True if success."""
         with subprocess.Popen(
                 self._ping_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
@@ -97,6 +104,12 @@ class Ping:
                 return False
             except subprocess.CalledProcessError:
                 return False
+
+    def _ping_socket(self, port=9197):
+        """Check if port is available and return True if success."""
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(PING_TIMEOUT-1)
+            return s.connect_ex((self._ip_address, port)) == 0
 
 
 class ConnectionFailure(Exception):
