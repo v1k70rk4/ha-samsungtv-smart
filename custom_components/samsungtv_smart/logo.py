@@ -101,7 +101,7 @@ class Logo:
         else:
             self._media_image_base_url = f"{LOGO_BASE_URL}export/{self._logo_option}"
 
-    async def check_requested(self):
+    def check_requested(self):
         """Check if a new file update is requested."""
         if self._media_image_base_url is None:
             return False
