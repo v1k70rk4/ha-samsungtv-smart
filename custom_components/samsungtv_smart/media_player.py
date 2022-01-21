@@ -106,7 +106,7 @@ from .const import (
     AppLaunchMethod,
     PowerOnMethod,
 )
-from .logo import LOGO_OPTION_DEFAULT, Logo
+from .logo import LOGO_OPTION_DEFAULT, Logo, LogoOption
 
 ATTR_ART_MODE_STATUS = "art_mode_status"
 ATTR_IP_ADDRESS = "ip_address"
@@ -327,7 +327,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._st_error_count = 0
         self._setvolumebyst = False
 
-        self._logo_option = LOGO_OPTION_DEFAULT[0]
+        self._logo_option = LOGO_OPTION_DEFAULT
         self._logo = Logo(
             logo_option=self._logo_option,
             logo_file_download=logo_file,
@@ -859,7 +859,9 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._running_app,
         )
 
-        new_logo_option = self._get_option(CONF_LOGO_OPTION, self._logo_option)
+        new_logo_option = LogoOption(
+            self._get_option(CONF_LOGO_OPTION, self._logo_option.value)
+        )
         if self._logo_option != new_logo_option:
             self._logo_option = new_logo_option
             self._logo.set_logo_color(new_logo_option)

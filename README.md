@@ -164,20 +164,15 @@ With `All Apps` the list will contain all apps installed on the TV, with `Defaul
 with only the most common application, with `Not Load` application list will be empty.<br/>
 **Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
 
-- **Applications launch method used**<br/>
-Possible values: `Control Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
-This option determine the mode used to launch applications.<br/>
-Use `Rest API Call` only if the other 2 methods do not work.<br/>
-
 - **Dump apps list on log file at startup**<br/>
 (default = False)<br/>
 When enabled the component will try to dump the list of available apps on TV in the HA log file at Info level.
 The dump of the apps may not work for some TV models.<br/>
 
-- **Use volume mute status to detect fake power ON**<br/>
-(default = True)<br/>
-When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
-TV is powered on the volume is always unmuted.<br/>
+- **Applications launch method used**<br/>
+Possible values: `Control Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
+This option determine the mode used to launch applications.<br/>
+Use `Rest API Call` only if the other 2 methods do not work.<br/>
 
 - **Number of times WOL packet is sent to turn on TV**<br/>
 (default = 1, range from 1 to 5)<br/>
@@ -201,6 +196,11 @@ An external `binary_sensor` selectable from a list that can be used to determina
 This can be any available `binary_sensor` that can better determinate the status of the TV, for example a 
 `binary_sensor` based on TV power consumption. It is suggested to not use a sensor based on `ping` platform
 because this method is already implemented by the integration.</br>
+
+- **Use volume mute status to detect fake power ON**<br/>
+(default = True)<br/>
+When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
+TV is powered on the volume is always unmuted.<br/>
 
 ## Custom configuration parameters
 
