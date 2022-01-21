@@ -40,6 +40,7 @@ from .const import (
     CONF_DUMP_APPS,
     CONF_EXT_POWER_ENTITY,
     CONF_LOGO_OPTION,
+    CONF_PING_PORT,
     CONF_POWER_ON_DELAY,
     CONF_POWER_ON_METHOD,
     CONF_USE_ST_CHANNEL_INFO,
@@ -104,6 +105,7 @@ ADVANCED_OPTIONS = [
     CONF_APP_LAUNCH_METHOD,
     CONF_DUMP_APPS,
     CONF_EXT_POWER_ENTITY,
+    CONF_PING_PORT,
     CONF_WOL_REPEAT,
     CONF_POWER_ON_DELAY,
     CONF_USE_MUTE_CHECK,
@@ -491,10 +493,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 ): bool,
                 vol.Required(
                     CONF_WOL_REPEAT,
-                    default=min(
-                        options.get(CONF_WOL_REPEAT, 1),
-                        MAX_WOL_REPEAT,
-                    ),
+                    default=min(options.get(CONF_WOL_REPEAT, 1), MAX_WOL_REPEAT),
                 ): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=MAX_WOL_REPEAT)),
                 vol.Required(
                     CONF_POWER_ON_DELAY,
@@ -502,6 +501,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_POWER_ON_DELAY, DEFAULT_POWER_ON_DELAY
                     ),
                 ): vol.All(vol.Coerce(int), vol.Clamp(min=0, max=60)),
+                vol.Required(
+                    CONF_PING_PORT,
+                    default=options.get(CONF_PING_PORT, 0),
+                ): vol.All(vol.Coerce(int), vol.Clamp(min=0, max=65535)),
                 vol.Optional(
                     CONF_EXT_POWER_ENTITY,
                     description={

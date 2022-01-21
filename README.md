@@ -189,8 +189,15 @@ until the TV properly turn-on.<br/>
 This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
 ON status for TV that enable the network interface on regular interval also when the TV status is OFF.<br/>
 
+- **TCP port used to check power status**<br/>
+(default = 0, range from 0 to 65535)<br/>
+With this option is possible to check the availability of a specific port to determinate power status instead
+of using ICMP echo. To continue use ICMP echo, leave the value to `0`, otherwise set a port that is known becoming
+available when TV is on (possible working ports, depending on TV models, are `9110`, `9119`, `9197`).</br>
+**N.B. If you set an invalid port here, TV is always reported as `off`.**</br>
+
 - **Binary sensor to help detect power status**<br/>
-An external `binary_sensor` selectable from a list than can be used to determinate TV power status.<br/>
+An external `binary_sensor` selectable from a list that can be used to determinate TV power status.<br/>
 This can be any available `binary_sensor` that can better determinate the status of the TV, for example a 
 `binary_sensor` based on TV power consumption. It is suggested to not use a sensor based on `ping` platform
 because this method is already implemented by the integration.</br>

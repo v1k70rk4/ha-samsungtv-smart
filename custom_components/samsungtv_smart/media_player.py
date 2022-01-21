@@ -77,6 +77,7 @@ from .const import (
     CONF_DUMP_APPS,
     CONF_EXT_POWER_ENTITY,
     CONF_LOGO_OPTION,
+    CONF_PING_PORT,
     CONF_POWER_ON_DELAY,
     CONF_POWER_ON_METHOD,
     CONF_SHOW_CHANNEL_NR,
@@ -460,7 +461,8 @@ class SamsungTVDevice(MediaPlayerEntity):
     def _ping_device(self):
         """Ping TV with WS and others method to check power status."""
 
-        result = self._ws.ping_device()
+        ping_port = self._get_option(CONF_PING_PORT, 0)
+        result = self._ws.ping_device(ping_port)
         if result and self._st:
             use_st_status = self._get_option(CONF_USE_ST_STATUS_INFO, True)
             if (

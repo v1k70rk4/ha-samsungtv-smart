@@ -105,7 +105,7 @@ class Ping:
             except subprocess.CalledProcessError:
                 return False
 
-    def _ping_socket(self, port=9197):
+    def _ping_socket(self, port):
         """Check if port is available and return True if success."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(PING_TIMEOUT-1)
@@ -680,8 +680,13 @@ class SamsungTVWS:
     def running_app(self):
         return self._running_app
 
-    def ping_device(self):
-        result = self._ping.ping()
+    def ping_device(self, port=0):
+        """Ping TV device to check current status, and return boolean.
+            If port is specified, try to open specific port
+            for check, otherwise it uses ICMP echo
+            If check is True, try to open WS connection
+        """
+        result = self._ping.ping(port)
         # check ws ping/pong
         call_time = datetime.utcnow()
         if result and self._ws_remote:
