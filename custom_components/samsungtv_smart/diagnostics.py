@@ -1,7 +1,7 @@
 """Diagnostics support for Samsung TV Smart."""
 from __future__ import annotations
 
-from homeassistant.components.diagnostics import async_redact_data
+from homeassistant.components.diagnostics import REDACTED, async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_KEY, CONF_ID, CONF_MAC
 from homeassistant.core import HomeAssistant, callback
@@ -63,6 +63,8 @@ def _async_device_ha_info(
     )
 
     for entity_entry in hass_entities:
+        if entity_entry.platform != DOMAIN:
+            continue
         state = hass.states.get(entity_entry.entity_id)
         state_dict = None
         if state:
@@ -71,6 +73,12 @@ def _async_device_ha_info(
             state_dict.pop("entity_id", None)
             # The context doesn't provide useful information in this case.
             state_dict.pop("context", None)
+            # Redact the `entity_picture` attribute as it contains a token.
+            if "entity_picture" in state_dict["attributes"]:
+                state_dict["attributes"] = {
+                    **state_dict["attributes"],
+                    "entity_picture": REDACTED,
+                }
 
         data["entities"][entity_entry.entity_id] = {
             "name": entity_entry.name,
