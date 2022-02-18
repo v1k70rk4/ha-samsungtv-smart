@@ -203,6 +203,19 @@ class SamsungTVWS:
         self.close()
 
     @staticmethod
+    def ping_probe(host):
+        """Try to ping device and return usable port."""
+        ping = Ping(host)
+        for port in (9197, 0):
+            try:
+                if ping.ping(port):
+                    return port
+            except Exception:
+                _LOGGING.debug("Failed to ping device using port %s", port)
+
+        return None
+
+    @staticmethod
     def _serialize_string(string):
         if isinstance(string, str):
             string = str.encode(string)

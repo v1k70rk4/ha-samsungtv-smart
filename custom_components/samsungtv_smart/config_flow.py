@@ -143,6 +143,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._logo_option = None
         self._device_info = {}
         self._token = None
+        self._ping_port = None
 
     def _stdev_already_used(self, devices_id):
         """Check if a device_id is in HA config."""
@@ -205,6 +206,7 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
         if result == RESULT_SUCCESS:
             self._token = self._tv_info.ws_token
+            self._ping_port = self._tv_info.ping_port
             self._device_info = await get_device_info(self._host, session)
             self._mac = self._device_info.get(ATTR_DEVICE_MAC)
 
@@ -325,8 +327,12 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             self.CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
+        options = None
+        if self._ping_port:
+            options = {CONF_PING_PORT: self._ping_port}
+
         _LOGGER.info("Configured new entity %s with host %s", title, self._host)
-        return self.async_create_entry(title=title, data=data)
+        return self.async_create_entry(title=title, data=data, options=options)
 
     def _get_init_schema(self):
         data = self._user_data or {}
