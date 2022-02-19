@@ -5,7 +5,6 @@ import asyncio
 import async_timeout
 import logging
 import os
-from shutil import copyfile
 import socket
 import voluptuous as vol
 from websocket import WebSocketException
