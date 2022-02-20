@@ -30,7 +30,7 @@ from homeassistant.const import (
     MINOR_VERSION,
     __version__,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import callback, HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.helpers.typing import ConfigType
@@ -201,7 +201,8 @@ def _migrate_token(hass: HomeAssistant, entry: ConfigEntry, hostname: str) -> No
     _remove_token_file(hass, hostname, token_file)
 
 
-def _migrate_options_format(hass: HomeAssistant, entry: ConfigEntry):
+@callback
+def _migrate_options_format(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Migrate options to new format."""
     opt_migrated = False
     new_options = {}
@@ -218,17 +219,31 @@ def _migrate_options_format(hass: HomeAssistant, entry: ConfigEntry):
         hass.config_entries.async_update_entry(entry, options=new_options)
 
 
-def _migrate_entry_unique_id(hass: HomeAssistant, entry: ConfigEntry):
+@callback
+def _migrate_entry_unique_id(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Migrate unique_is to new format."""
     if CONF_ID in entry.data:
-        unique_id = entry.data[CONF_ID]
+        new_unique_id = entry.data[CONF_ID]
     elif CONF_MAC in entry.data:
-        unique_id = entry.data[CONF_MAC]
+        new_unique_id = entry.data[CONF_MAC]
     else:
-        unique_id = entry.data[CONF_HOST]
+        new_unique_id = entry.data[CONF_HOST]
 
-    if entry.unique_id != unique_id:
-        hass.config_entries.async_update_entry(entry, unique_id=unique_id)
+    if entry.unique_id == new_unique_id:
+        return
+
+    entries_list = hass.config_entries.async_entries(DOMAIN)
+    for other_entry in entries_list:
+        if other_entry.unique_id == new_unique_id:
+            _LOGGER.warning(
+                "Found duplicated entry %s and %s that refer to the same device. Please remove unused entry",
+                entry.data[CONF_HOST],
+                other_entry.data[CONF_HOST],
+            )
+            return
+
+    _LOGGER.info("Migrated entry unique id from %s to %s", entry.unique_id, new_unique_id)
+    hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
 async def get_device_info(hostname: str, session: ClientSession) -> dict:
