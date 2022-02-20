@@ -236,7 +236,7 @@ def _migrate_entry_unique_id(hass: HomeAssistant, entry: ConfigEntry) -> None:
     for other_entry in entries_list:
         if other_entry.unique_id == new_unique_id:
             _LOGGER.warning(
-                "Found duplicated entry %s and %s that refer to the same device. Please remove unused entry",
+                "Found duplicated entries %s and %s that refer to the same device. Please remove unused entry",
                 entry.data[CONF_HOST],
                 other_entry.data[CONF_HOST],
             )
