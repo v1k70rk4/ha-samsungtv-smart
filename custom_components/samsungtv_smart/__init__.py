@@ -20,6 +20,7 @@ from homeassistant.const import (
     CONF_BROADCAST_ADDRESS,
     CONF_DEVICE_ID,
     CONF_HOST,
+    CONF_ID,
     CONF_MAC,
     CONF_NAME,
     CONF_PORT,
@@ -217,6 +218,19 @@ def _migrate_options_format(hass: HomeAssistant, entry: ConfigEntry):
         hass.config_entries.async_update_entry(entry, options=new_options)
 
 
+def _migrate_entry_unique_id(hass: HomeAssistant, entry: ConfigEntry):
+    """Migrate unique_is to new format."""
+    if CONF_ID in entry.data:
+        unique_id = entry.data[CONF_ID]
+    elif CONF_MAC in entry.data:
+        unique_id = entry.data[CONF_MAC]
+    else:
+        unique_id = entry.data[CONF_HOST]
+
+    if entry.unique_id != unique_id:
+        hass.config_entries.async_update_entry(entry, unique_id=unique_id)
+
+
 async def get_device_info(hostname: str, session: ClientSession) -> dict:
     """Try retrieve device information"""
     try:
@@ -379,7 +393,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             ip_address = entry_config[CONF_HOST]
 
             # check if already configured
-            valid_entries = [entry.entry_id for entry in entries_list if entry.unique_id == ip_address]
+            valid_entries = [
+                entry.entry_id for entry in entries_list if entry.data[CONF_HOST] == ip_address
+            ]
             if not valid_entries:
                 _LOGGER.warning(
                     "Found yaml configuration for not configured device %s. Please use UI to configure",
@@ -404,6 +420,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the Samsung TV platform."""
     if not is_valid_ha_version():
         return False
+
+    # migrate unique id to a accepted format
+    _migrate_entry_unique_id(hass, entry)
 
     # migrate old token file to registry entry if required
     if CONF_TOKEN not in entry.data:
