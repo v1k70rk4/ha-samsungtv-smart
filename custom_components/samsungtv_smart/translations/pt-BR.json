@@ -27,7 +27,7 @@
                     "use_ha_name_for_ws": "Use o nome da instância do HA para a identificação na TV",
                     "api_key": "Token gerado pelo SmartThings (opcional)"
                 },
-                "description": "Insira as informações da sua TV Samsung. O token SmartThings é opcional, mas muito sugerido. Se você nunca conectou o Home Assistant antes, verá um pop-up na TV solicitando uma autorização.",
+                "description": "Insira as informações da sua TV Samsung. O token SmartThings é opcional, mas muito sugerido. Depois de confirmar os dados, verá um pop-up na TV solicitando uma autorização.",
                 "title": "SamsungTV Smart"
             },
             "stdevice": {

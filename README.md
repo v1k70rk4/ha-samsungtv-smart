@@ -144,6 +144,15 @@ This is required for the component to know the name of the TV channel.<br/>
 Check guide [here](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Logos.md) 
 for updating the logo database this component is relying on.
 
+- **Allow use of local logo images**<br/>
+(default = True)<br/>
+When enabled the integration will try to get logo image for the current media from the `static` subfolder. You can add new logo images
+in this folder, using the following rules for logo filename:
+  - must be equal to the name of the `media_title` attribute, removing space, `_` and `.` characters and replacing `+` character with
+  the string `plus`
+  - must have the `.png` suffix
+  - must be in `png` format (suggested size is 400x400 pixels)
+
 - **List of entity to Power OFF with TV**<br/>
 A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). Select entities from list. 
 This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>
