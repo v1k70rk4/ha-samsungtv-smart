@@ -164,7 +164,6 @@ SUPPORT_SAMSUNGTV_SMART = (
     | SUPPORT_PLAY
     | SUPPORT_PLAY_MEDIA
     | SUPPORT_STOP
-    | SUPPORT_BROWSE_MEDIA
 )
 
 SCAN_INTERVAL = timedelta(seconds=15)
@@ -978,9 +977,12 @@ class SamsungTVDevice(MediaPlayerEntity):
     @property
     def supported_features(self) -> int:
         """Flag media player features that are supported."""
-        if not self._st:
-            return SUPPORT_SAMSUNGTV_SMART
-        return SUPPORT_SAMSUNGTV_SMART | SUPPORT_SELECT_SOUND_MODE
+        features = SUPPORT_SAMSUNGTV_SMART
+        if self.state == STATE_ON:
+            features |= SUPPORT_BROWSE_MEDIA
+        if self._st:
+            features |= SUPPORT_SELECT_SOUND_MODE
+        return features
 
     @property
     def media_channel(self):
@@ -1480,8 +1482,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             await self.async_send_command(media_id, CMD_SEND_TEXT)
 
         else:
-            _LOGGER.error("Unsupported media type: %s", media_type)
-            return
+            raise NotImplementedError(f"Unsupported media type: {media_type}")
 
     async def async_browse_media(self, media_content_type=None, media_content_id=None):
         """Implement the websocket media browsing helper."""
