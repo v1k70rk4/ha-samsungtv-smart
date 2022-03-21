@@ -61,7 +61,7 @@ class LocalImageUrl:
         self._local_image_url = None
         self._last_media_title = None
 
-    async def get_image_url(self, media_title, local_logo_file=None):
+    def get_image_url(self, media_title, local_logo_file=None):
         """Check local image is present."""
         if not media_title and not local_logo_file:
             return None

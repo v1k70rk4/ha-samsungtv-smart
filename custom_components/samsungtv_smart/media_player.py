@@ -972,7 +972,9 @@ class SamsungTVDevice(MediaPlayerEntity):
                 app_id = run_app_id
 
         _, _, logo_file = _get_default_app_info(app_id)
-        return await self._local_image_url.get_image_url(media_title, logo_file)
+        return await self.hass.async_add_executor_job(
+            self._local_image_url.get_image_url, media_title, logo_file
+        )
 
     @property
     def supported_features(self) -> int:
