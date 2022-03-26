@@ -1414,21 +1414,29 @@ class SamsungTVDevice(MediaPlayerEntity):
                 self._yt_app_id = app_id
                 break
 
+        _LOGGER.debug("YouTube App ID: %s", self._yt_app_id or "not found")
         return len(self._yt_app_id) > 0
 
     def _get_youtube_video_id(self, url):
         """Try to get youtube video id from url."""
         if not self._get_youtube_app_id():
+            _LOGGER.debug("You tube App ID not available")
             return None
+
         url_parsed = urlparse(url)
         url_host = url_parsed.hostname.casefold()
         if url_host.find("youtube") < 0:
+            _LOGGER.debug("URL not related to Youtube")
             return None
 
         url_query = parse_qs(url_parsed.query)
         if "v" not in url_query:
+            _LOGGER.debug("Youtube video ID not found")
             return None
-        return url_query["v"][0]
+
+        video_id = url_query["v"][0]
+        _LOGGER.debug("Youtube video ID: %s", video_id)
+        return video_id
 
     async def async_play_media(self, media_type, media_id, **kwargs):
         """Support running different media type command."""
