@@ -146,8 +146,8 @@ for updating the logo database this component is relying on.
 
 - **Allow use of local logo images**<br/>
 (default = True)<br/>
-When enabled the integration will try to get logo image for the current media from the `static` subfolder. You can add new logo images
-in this folder, using the following rules for logo filename:
+When enabled the integration will try to get logo image for the current media from the `www/samsungtv_smart_logos` sub folder of home-assistant configuration folder. 
+You can add new logo images in this folder, using the following rules for logo filename:
   - must be equal to the name of the `media_title` attribute, removing space, `_` and `.` characters and replacing `+` character with
   the string `plus`
   - must have the `.png` suffix
