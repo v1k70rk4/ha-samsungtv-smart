@@ -1375,8 +1375,9 @@ class SamsungTVDevice(MediaPlayerEntity):
         method = ""
         app_cmd = app_data.split("@")
         app_id = app_cmd[0]
-        if app_id_from_list := self._app_list.get(app_id):
-            app_id = app_id_from_list
+        if self._app_list:
+            if app_id_from_list := self._app_list.get(app_id):
+                app_id = app_id_from_list
         if meta_data:
             app_id += f",,{meta_data}"
             method = CMD_RUN_APP_REMOTE
