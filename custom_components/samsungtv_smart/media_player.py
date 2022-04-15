@@ -1448,7 +1448,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         else:
             media_type = media_type.lower()
 
-        if media_type in [MEDIA_TYPE_BROWSER, MEDIA_TYPE_URL, MEDIA_TYPE_VIDEO]:
+        if media_type in [MEDIA_TYPE_BROWSER, MEDIA_TYPE_URL]:
             media_id = async_process_play_media_url(self.hass, media_id)
             try:
                 cv.url(media_id)
@@ -1474,23 +1474,26 @@ class SamsungTVDevice(MediaPlayerEntity):
 
             await self._async_send_keys(media_id)
 
-        # Open url in browser or youtube app
-        elif media_type in [MEDIA_TYPE_BROWSER, MEDIA_TYPE_URL]:
-            if media_type == MEDIA_TYPE_URL:
-                if video_id := self._get_youtube_video_id(media_id):
-                    await self._async_launch_app(self._yt_app_id, video_id)
-                    return
+        # Open url or youtube app
+        elif media_type == MEDIA_TYPE_URL:
+            if await self._upnp.async_set_current_media(media_id):
+                self._playing = True
+                return
+
+            if video_id := self._get_youtube_video_id(media_id):
+                await self._async_launch_app(self._yt_app_id, video_id)
+                return
+
             await self.async_send_command(media_id, CMD_OPEN_BROWSER)
 
-        # Play media
-        elif media_type == MEDIA_TYPE_VIDEO:
-            await self._upnp.async_set_current_media(media_id)
-            self._playing = True
+        # Open url in browser
+        elif media_type == MEDIA_TYPE_BROWSER:
+            await self.async_send_command(media_id, CMD_OPEN_BROWSER)
 
         # Trying to make stream component work on TV
         elif media_type == "application/vnd.apple.mpegurl":
-            await self._upnp.async_set_current_media(media_id)
-            self._playing = True
+            if await self._upnp.async_set_current_media(media_id):
+                self._playing = True
 
         elif media_type == MEDIA_TYPE_TEXT:
             await self.async_send_command(media_id, CMD_SEND_TEXT)
