@@ -1209,7 +1209,7 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     async def async_toggle(self):
         """Toggle the power on the media player."""
-        if self.state == STATE_ON and self._ws.artmode_status == ArtModeStatus.Off:
+        if self.state == STATE_ON and self._ws.artmode_status != ArtModeStatus.Unsupported:
             if self._get_option(CONF_TOGGLE_ART_MODE, False):
                 await self.async_set_art_mode()
                 return
