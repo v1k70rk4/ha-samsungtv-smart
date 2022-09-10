@@ -45,13 +45,13 @@ from homeassistant.const import (
     CONF_TOKEN,
     STATE_OFF,
     STATE_ON,
-    STATE_UNAVAILABLE,
 )
 from homeassistant.core import DOMAIN as HA_DOMAIN, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.service import async_call_from_config, CONF_SERVICE_ENTITY_ID
 from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.util import dt as dt_util, Throttle
@@ -314,12 +314,15 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._yt_app_id = None
         # Assume that the TV is in Play mode
         self._playing = True
-        self._state = STATE_UNAVAILABLE
+        self._state = STATE_OFF
         # Mark the end of a shutdown command (need to wait 15 seconds before
         # sending the next command to avoid turning the TV back ON).
+        self._started_up = False
         self._end_of_power_off = None
         self._power_on_detected = None
+        self._delay_cancel = None
         self._set_update_forced = False
+        self._delay_status_update = False
         self._update_forced_time = None
         self._fake_on = None
         self._delayed_set_source = None
@@ -432,10 +435,18 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     def _update_forced(self):
         """Check if a forced update is required."""
+        if self._delay_status_update:
+            self._delay_status_update = False
+            return True
+
+        if self._delay_cancel:
+            self._delay_cancel()
+            self._delay_cancel = None
+
         if self._set_update_forced:
+            self._set_update_forced = False
             self._update_forced_time = datetime.utcnow()
             self._power_on_detected = datetime.min
-            self._set_update_forced = False
             return False
 
         if not self._update_forced_time:
@@ -459,6 +470,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             if power_on_delay > 0:
                 if not self._power_on_detected:
                     self._power_on_detected = datetime.utcnow()
+                    return False
                 difference = (datetime.utcnow() - self._power_on_detected).total_seconds()
                 if difference < power_on_delay:
                     return False
@@ -487,13 +499,9 @@ class SamsungTVDevice(MediaPlayerEntity):
 
     def _get_external_entity_status(self):
         """Get status from external binary sensor."""
-        ext_entity = self._get_option(CONF_EXT_POWER_ENTITY)
-        if not ext_entity:
+        if not (ext_entity := self._get_option(CONF_EXT_POWER_ENTITY)):
             return True
-        ext_state = self.hass.states.get(ext_entity)
-        if not ext_state:
-            return True
-        return ext_state.state != STATE_OFF
+        return not self.hass.states.is_state(ext_entity, STATE_OFF)
 
     def _ping_device(self):
         """Ping TV with WS and others method to check power status."""
@@ -763,10 +771,13 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         result = await self.hass.async_add_executor_job(self._ping_device)
 
-        use_mute_check = self._get_option(CONF_USE_MUTE_CHECK, True)
-        if not result:
+        if not self._started_up or not result:
+            use_mute_check = False
             self._fake_on = None
-        elif self._state == STATE_OFF and use_mute_check:
+        else:
+            use_mute_check = self._get_option(CONF_USE_MUTE_CHECK, True)
+
+        if use_mute_check and self._state == STATE_OFF:
             first_detect = self._fake_on is None
             if first_detect or self._fake_on is True:
                 if (is_muted := await self._upnp.async_get_mute()) is None:
@@ -780,8 +791,8 @@ class SamsungTVDevice(MediaPlayerEntity):
                         )
                     result = False
 
-        result = self._delay_power_on(result)
-        # result = result and self._ws.is_connected
+        if self._started_up:
+            result = self._delay_power_on(result)
 
         if result and self._st:
             if self._st.state != self._st.state.STATE_ON:
@@ -789,6 +800,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._log_st_error(st_error)
 
         self._state = STATE_ON if result else STATE_OFF
+        self._started_up = True
 
         if self.state == STATE_ON:  # NB: We are checking properties, not attribute!
             if self._delayed_set_source:
@@ -996,7 +1008,7 @@ class SamsungTVDevice(MediaPlayerEntity):
                     return MEDIA_TYPE_CHANNEL
                 return MEDIA_TYPE_VIDEO
             return MEDIA_TYPE_APP
-        return STATE_OFF
+        return None
 
     @property
     def app_id(self):
@@ -1145,15 +1157,19 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._delayed_set_source = None
         if not await self._async_power_on(set_art_mode):
             return False
-        if self._state == STATE_OFF:
-            def update_status():
-                if self._state != STATE_ON:
-                    self.async_schedule_update_ha_state(True)
-                    self._set_update_forced = True
+        if self._state != STATE_OFF:
+            return True
 
-            self.hass.loop.call_later(POWER_ON_DELAY, update_status)
-            self._power_on_detected = datetime.min
-            await self._async_switch_entity(not set_art_mode)
+        @callback
+        def update_status(_):
+            self._delay_status_update = False
+            if self._state != STATE_ON:
+                self.async_schedule_update_ha_state(True)
+
+        self._delay_status_update = True
+        self._set_update_forced = True
+        self._delay_cancel = async_call_later(self.hass, POWER_ON_DELAY, update_status)
+        await self._async_switch_entity(not set_art_mode)
 
         return True
 
