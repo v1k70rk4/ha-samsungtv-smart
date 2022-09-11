@@ -815,7 +815,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             result = self._delay_power_on(result)
 
         if result and self._st:
-            if self._st.state != self._st.state.STATE_ON:
+            if self._st.state != STStatus.STATE_ON:
                 st_error = True
         self._log_st_error(st_error)
 
