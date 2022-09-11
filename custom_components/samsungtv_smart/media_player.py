@@ -929,13 +929,6 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._attr_media_image_remotely_accessible = False
             return
 
-        _LOGGER.debug(
-            "New media title is: %s, old media title is: %s, running app is: %s",
-            new_media_title,
-            self._attr_media_title,
-            self._running_app,
-        )
-
         new_logo_option = LogoOption(
             self._get_option(CONF_LOGO_OPTION, self._logo_option.value)
         )
@@ -950,6 +943,13 @@ class SamsungTVDevice(MediaPlayerEntity):
         if not logo_option_changed:
             if self._attr_media_title and new_media_title == self._attr_media_title:
                 return
+
+        _LOGGER.debug(
+            "New media title is: %s, old media title is: %s, running app is: %s",
+            new_media_title,
+            self._attr_media_title or "<none>",
+            self._running_app,
+        )
 
         remote_access = False
         if (media_image_url := await self._local_media_image(new_media_title)) is None:
