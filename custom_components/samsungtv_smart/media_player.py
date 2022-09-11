@@ -205,7 +205,7 @@ async def async_setup_entry(
     platform = entity_platform.current_platform.get()
     platform.async_register_entity_service(
         SERVICE_SELECT_PICTURE_MODE,
-        {vol.Required(ATTR_PICTURE_MODE): cv.string},
+        vol.Schema({vol.Required(ATTR_PICTURE_MODE): cv.string}),
         "async_select_picture_mode",
     )
     platform.async_register_entity_service(
@@ -321,7 +321,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._end_of_power_off = None
         self._power_on_detected = None
         self._delay_cancel = None
-        self._set_update_forced = False
+        self._set_update_forced = 0
         self._delay_status_update = False
         self._update_forced_time = None
         self._fake_on = None
@@ -443,8 +443,8 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._delay_cancel()
             self._delay_cancel = None
 
-        if self._set_update_forced:
-            self._set_update_forced = False
+        if self._set_update_forced > 0:
+            self._set_update_forced -= 1
             self._update_forced_time = datetime.utcnow()
             self._power_on_detected = datetime.min
             return False
@@ -458,6 +458,26 @@ class SamsungTVDevice(MediaPlayerEntity):
             self._update_forced_time = None
             return False
         return True
+
+    def _delay_update(self, delay_sec: int):
+        """Delay the update for a specific interval"""
+        if self._set_update_forced <= 0:
+            return
+
+        if self._state == STATE_ON:
+            self._set_update_forced = 0
+            return
+
+        @callback
+        def update_status(_):
+            self._delay_status_update = False
+            if self._state != STATE_ON:
+                self.async_schedule_update_ha_state(True)
+            else:
+                self._set_update_forced = 0
+
+        self._delay_status_update = True
+        self._delay_cancel = async_call_later(self.hass, delay_sec, update_status)
 
     def _delay_power_on(self, result):
         """Manage delay for power on status."""
@@ -801,6 +821,7 @@ class SamsungTVDevice(MediaPlayerEntity):
 
         self._state = STATE_ON if result else STATE_OFF
         self._started_up = True
+        self._delay_update(POWER_ON_DELAY)
 
         if self.state == STATE_ON:  # NB: We are checking properties, not attribute!
             if self._delayed_set_source:
@@ -1160,15 +1181,8 @@ class SamsungTVDevice(MediaPlayerEntity):
         if self._state != STATE_OFF:
             return True
 
-        @callback
-        def update_status(_):
-            self._delay_status_update = False
-            if self._state != STATE_ON:
-                self.async_schedule_update_ha_state(True)
-
-        self._delay_status_update = True
-        self._set_update_forced = True
-        self._delay_cancel = async_call_later(self.hass, POWER_ON_DELAY, update_status)
+        self._set_update_forced = 2  # we try to check status 2 times in a shorter interval
+        self._delay_update(POWER_ON_DELAY)
         await self._async_switch_entity(not set_art_mode)
 
         return True
