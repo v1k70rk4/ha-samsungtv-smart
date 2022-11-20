@@ -23,6 +23,6 @@ jobs:
         run: |
           pip install -r requirements.txt
       - name: isort
-        run: isort --multi-line 3 --line-length 88 --profile black --diff --check .
+        run: isort --diff --check .
       - name: Black
         run: black --line-length 88 --check .
