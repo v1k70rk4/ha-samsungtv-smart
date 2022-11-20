@@ -1,16 +1,13 @@
 """Config flow for Samsung TV."""
 from __future__ import annotations
 
+import logging
 import socket
 from typing import Any, Dict
-import logging
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.components.binary_sensor import DOMAIN as BS_DOMAIN
-from homeassistant.core import callback, HomeAssistant
-
 from homeassistant.const import (
     ATTR_DEVICE_ID,
     ATTR_FRIENDLY_NAME,
@@ -25,7 +22,9 @@ from homeassistant.const import (
     CONF_TOKEN,
     __version__,
 )
-from homeassistant.helpers import config_validation as cv, entity_registry as er
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
 
 from . import SamsungTVInfo, get_device_info, is_valid_ha_version
 from .const import (
@@ -33,11 +32,10 @@ from .const import (
     ATTR_DEVICE_MODEL,
     ATTR_DEVICE_NAME,
     ATTR_DEVICE_OS,
-    DOMAIN,
     CONF_APP_LAUNCH_METHOD,
     CONF_APP_LOAD_METHOD,
-    CONF_DEVICE_NAME,
     CONF_DEVICE_MODEL,
+    CONF_DEVICE_NAME,
     CONF_DEVICE_OS,
     CONF_DUMP_APPS,
     CONF_EXT_POWER_ENTITY,
@@ -56,6 +54,7 @@ from .const import (
     CONF_WOL_REPEAT,
     CONF_WS_NAME,
     DEFAULT_POWER_ON_DELAY,
+    DOMAIN,
     MAX_WOL_REPEAT,
     RESULT_ST_DEVICE_NOT_FOUND,
     RESULT_ST_DEVICE_USED,
@@ -230,7 +229,8 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(
                 reason="unsupported_version",
                 description_placeholders={
-                    "req_ver": __min_ha_version__, "run_ver": __version__
+                    "req_ver": __min_ha_version__,
+                    "run_ver": __version__,
                 },
             )
 
@@ -378,7 +378,8 @@ class SamsungTVConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_USE_HA_NAME, default=data.get(CONF_USE_HA_NAME, False)
                 ): bool,
                 vol.Optional(
-                    CONF_API_KEY, description={"suggested_value": data.get(CONF_API_KEY, "")}
+                    CONF_API_KEY,
+                    description={"suggested_value": data.get(CONF_API_KEY, "")},
                 ): str,
             }
         )
@@ -456,9 +457,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         opt_schema = {
             vol.Required(
                 CONF_LOGO_OPTION,
-                default=options.get(
-                    CONF_LOGO_OPTION, LOGO_OPTION_DEFAULT.value
-                ),
+                default=options.get(CONF_LOGO_OPTION, LOGO_OPTION_DEFAULT.value),
             ): vol.In(LOGO_OPTIONS),
             vol.Required(
                 CONF_USE_LOCAL_LOGO,
@@ -466,15 +465,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             ): bool,
             vol.Optional(
                 CONF_SYNC_TURN_OFF,
-                description={
-                    "suggested_value": options.get(CONF_SYNC_TURN_OFF, [])
-                },
+                description={"suggested_value": options.get(CONF_SYNC_TURN_OFF, [])},
             ): cv.multi_select(switch_entities),
             vol.Optional(
                 CONF_SYNC_TURN_ON,
-                description={
-                    "suggested_value": options.get(CONF_SYNC_TURN_ON, [])
-                },
+                description={"suggested_value": options.get(CONF_SYNC_TURN_ON, [])},
             ): cv.multi_select(switch_entities),
             vol.Required(CONF_SHOW_ADV_OPT, default=False): bool,
         }
@@ -495,9 +490,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 ): bool,
                 vol.Required(
                     CONF_POWER_ON_METHOD,
-                    default=options.get(
-                        CONF_POWER_ON_METHOD, PowerOnMethod.WOL.value
-                    ),
+                    default=options.get(CONF_POWER_ON_METHOD, PowerOnMethod.WOL.value),
                 ): vol.In(POWER_ON_METHODS),
             }
 
@@ -506,9 +499,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         else:
             data_schema = opt_schema
 
-        return self.async_show_form(
-            step_id="init", data_schema=vol.Schema(data_schema)
-        )
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(data_schema))
 
     async def async_step_adv_opt(self, user_input=None):
         """Handle advanced options flow."""
@@ -520,17 +511,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     @callback
     def _async_adv_opt_form(self):
         """Return configuration form for advanced options."""
-        external_entities = _async_get_matching_entities(
-            self.hass, [BS_DOMAIN]
-        )
+        external_entities = _async_get_matching_entities(self.hass, [BS_DOMAIN])
         options = self._adv_options
 
         data_schema = {
             vol.Required(
                 CONF_APP_LOAD_METHOD,
-                default=options.get(
-                    CONF_APP_LOAD_METHOD, AppLoadMethod.All.value
-                ),
+                default=options.get(CONF_APP_LOAD_METHOD, AppLoadMethod.All.value),
             ): vol.In(APP_LOAD_METHODS),
             vol.Required(
                 CONF_DUMP_APPS,
@@ -555,9 +542,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             ): vol.All(vol.Coerce(int), vol.Clamp(min=0, max=65535)),
             vol.Optional(
                 CONF_EXT_POWER_ENTITY,
-                description={
-                    "suggested_value": options.get(CONF_EXT_POWER_ENTITY, "")
-                }
+                description={"suggested_value": options.get(CONF_EXT_POWER_ENTITY, "")},
             ): vol.In(external_entities),
             vol.Required(
                 CONF_USE_MUTE_CHECK,
@@ -611,9 +596,5 @@ def _async_get_entry_entities(hass: HomeAssistant, entry_id: str):
     """Get the entities related to current entry"""
     return [
         entry.entity_id
-        for entry in (
-            er.async_entries_for_config_entry(
-                er.async_get(hass), entry_id
-            )
-        )
+        for entry in (er.async_entries_for_config_entry(er.async_get(hass), entry_id))
     ]

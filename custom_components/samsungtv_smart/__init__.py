@@ -1,19 +1,16 @@
 """The samsungtv_smart integration."""
 from __future__ import annotations
 
-from aiohttp import ClientConnectionError, ClientSession, ClientResponseError
 import asyncio
-import async_timeout
 import logging
 import os
-from pathlib import Path
 import socket
+from pathlib import Path
+
+import async_timeout
+import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from websocket import WebSocketException
-
-from .api.samsungws import ConnectionFailure, SamsungTVWS
-from .api.smartthings import SmartThingsTV
-
+from aiohttp import ClientConnectionError, ClientResponseError, ClientSession
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_DEVICE_ID,
@@ -32,11 +29,13 @@ from homeassistant.const import (
     Platform,
     __version__,
 )
-from homeassistant.core import callback, HomeAssistant
-import homeassistant.helpers.config_validation as cv
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.helpers.typing import ConfigType
+from websocket import WebSocketException
 
+from .api.samsungws import ConnectionFailure, SamsungTVWS
+from .api.smartthings import SmartThingsTV
 from .const import (
     ATTR_DEVICE_MAC,
     ATTR_DEVICE_MODEL,
@@ -46,19 +45,19 @@ from .const import (
     CONF_CHANNEL_LIST,
     CONF_DEVICE_NAME,
     CONF_LOAD_ALL_APPS,
-    CONF_SOURCE_LIST,
+    CONF_SCAN_APP_HTTP,
     CONF_SHOW_CHANNEL_NR,
+    CONF_SOURCE_LIST,
     CONF_SYNC_TURN_OFF,
     CONF_SYNC_TURN_ON,
-    CONF_WS_NAME,
-    CONF_UPDATE_METHOD,
     CONF_UPDATE_CUSTOM_PING_URL,
-    CONF_SCAN_APP_HTTP,
+    CONF_UPDATE_METHOD,
+    CONF_WS_NAME,
     DATA_CFG_YAML,
     DATA_OPTIONS,
     DEFAULT_PORT,
-    DEFAULT_TIMEOUT,
     DEFAULT_SOURCE_LIST,
+    DEFAULT_TIMEOUT,
     DOMAIN,
     LOCAL_LOGO_PATH,
     MIN_HA_MAJ_VER,
@@ -142,9 +141,8 @@ def tv_url(host: str, address: str = "") -> str:
 
 def is_min_ha_version(min_ha_major_ver: int, min_ha_minor_ver: int) -> bool:
     """Check if HA version at least a specific version."""
-    return (
-        MAJOR_VERSION > min_ha_major_ver or
-        (MAJOR_VERSION == min_ha_major_ver and MINOR_VERSION >= min_ha_minor_ver)
+    return MAJOR_VERSION > min_ha_major_ver or (
+        MAJOR_VERSION == min_ha_major_ver and MINOR_VERSION >= min_ha_minor_ver
     )
 
 
@@ -157,11 +155,13 @@ def _notify_error(hass, notification_id, title, message):
     """Notify user with persistent notification"""
     hass.async_create_task(
         hass.services.async_call(
-            domain='persistent_notification', service='create', service_data={
-                'title': title,
-                'message': message,
-                'notification_id': f"{DOMAIN}.{notification_id}"
-            }
+            domain="persistent_notification",
+            service="create",
+            service_data={
+                "title": title,
+                "message": message,
+                "notification_id": f"{DOMAIN}.{notification_id}",
+            },
         )
     )
 
@@ -252,7 +252,9 @@ def _migrate_entry_unique_id(hass: HomeAssistant, entry: ConfigEntry) -> None:
             )
             return
 
-    _LOGGER.info("Migrated entry unique id from %s to %s", entry.unique_id, new_unique_id)
+    _LOGGER.info(
+        "Migrated entry unique id from %s to %s", entry.unique_id, new_unique_id
+    )
     hass.config_entries.async_update_entry(entry, unique_id=new_unique_id)
 
 
@@ -267,7 +269,9 @@ def _register_logo_paths(hass: HomeAssistant) -> str | None:
         try:
             local_logo_path.mkdir(parents=True)
         except Exception as exc:
-            _LOGGER.warning("Error registering custom logo folder %s: %s", str(local_logo_path), exc)
+            _LOGGER.warning(
+                "Error registering custom logo folder %s: %s", str(local_logo_path), exc
+            )
             return None
 
     hass.http.register_static_path(CUSTOM_IMAGE_BASE_URL, str(local_logo_path), False)
@@ -279,8 +283,7 @@ async def get_device_info(hostname: str, session: ClientSession) -> dict:
     try:
         async with async_timeout.timeout(2):
             async with session.get(
-                    tv_url(host=hostname),
-                    raise_for_status=True
+                tv_url(host=hostname), raise_for_status=True
             ) as resp:
                 info = await resp.json()
     except (asyncio.TimeoutError, ClientConnectionError):
@@ -293,15 +296,13 @@ async def get_device_info(hostname: str, session: ClientSession) -> dict:
         return {}
 
     result = {
-        key: device[value]
-        for key, value in DEVICE_INFO.items()
-        if value in device
+        key: device[value] for key, value in DEVICE_INFO.items() if value in device
     }
 
     if ATTR_DEVICE_ID in result:
         device_id = result[ATTR_DEVICE_ID]
         if device_id.startswith("uuid:"):
-            result[ATTR_DEVICE_ID] = device_id[len("uuid:"):]
+            result[ATTR_DEVICE_ID] = device_id[len("uuid:") :]
 
     return result
 
@@ -332,7 +333,9 @@ class SamsungTVInfo:
 
         self._ping_port = SamsungTVWS.ping_probe(self._hostname)
         if self._ping_port is None:
-            _LOGGER.error("Connection to SamsungTV %s failed. Check that TV is on", self._hostname)
+            _LOGGER.error(
+                "Connection to SamsungTV %s failed. Check that TV is on", self._hostname
+            )
             return RESULT_NOT_SUCCESSFUL
 
         for port in (8001, 8002):
@@ -355,7 +358,9 @@ class SamsungTVInfo:
                 self._ws_port = port
                 return RESULT_SUCCESS
             except (OSError, ConnectionFailure, WebSocketException) as err:
-                _LOGGER.info("Configuration failed using port %s, error: %s", str(port), err)
+                _LOGGER.info(
+                    "Configuration failed using port %s, error: %s", str(port), err
+                )
 
         _LOGGER.error("Web socket connection to SamsungTV %s failed", self._hostname)
         return RESULT_NOT_SUCCESSFUL
@@ -366,11 +371,11 @@ class SamsungTVInfo:
 
         try:
             async with async_timeout.timeout(10):
-                _LOGGER.info(
-                    "Try connection to SmartThings TV with id [%s]", device_id
-                )
+                _LOGGER.info("Try connection to SmartThings TV with id [%s]", device_id)
                 with SmartThingsTV(
-                    api_key=api_key, device_id=device_id, session=session,
+                    api_key=api_key,
+                    device_id=device_id,
+                    session=session,
                 ) as st:
                     result = await st.async_device_health()
                 if result:
@@ -421,9 +426,11 @@ class SamsungTVInfo:
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Samsung TV integration."""
     if not is_valid_ha_version():
-        msg = "This integration require at least HomeAssistant version" \
-              f" {__min_ha_version__}, you are running version {__version__}." \
-              " Please upgrade HomeAssistant to continue use this integration."
+        msg = (
+            "This integration require at least HomeAssistant version"
+            f" {__min_ha_version__}, you are running version {__version__}."
+            " Please upgrade HomeAssistant to continue use this integration."
+        )
         _notify_error(hass, "inv_ha_version", "SamsungTV Smart", msg)
         _LOGGER.warning(msg)
         return True
@@ -437,12 +444,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
             # check if already configured
             valid_entries = [
-                entry.entry_id for entry in entries_list if entry.data[CONF_HOST] == ip_address
+                entry.entry_id
+                for entry in entries_list
+                if entry.data[CONF_HOST] == ip_address
             ]
             if not valid_entries:
                 _LOGGER.warning(
                     "Found yaml configuration for not configured device %s. Please use UI to configure",
-                    ip_address
+                    ip_address,
                 )
                 continue
 
@@ -473,7 +482,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # migrate old token file to registry entry if required
     if CONF_TOKEN not in entry.data:
-        await hass.async_add_executor_job(_migrate_token, hass, entry, entry.data[CONF_HOST])
+        await hass.async_add_executor_job(
+            _migrate_token, hass, entry, entry.data[CONF_HOST]
+        )
 
     # migrate options to new format if required
     _migrate_options_format(hass, entry)
