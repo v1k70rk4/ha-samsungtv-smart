@@ -1,10 +1,10 @@
 """ Smartthings TV integration """
 
-import json
-import logging
 from asyncio import TimeoutError as AsyncTimeoutError
 from datetime import timedelta
 from enum import Enum
+import json
+import logging
 from typing import Dict, List, Optional
 
 from aiohttp import ClientConnectionError, ClientResponseError, ClientSession
