@@ -355,7 +355,7 @@ class SmartThingsTV:
         api_device = f"{API_DEVICES}/{device_id}"
         api_device_status = f"{api_device}/states"
         # not used, just for reference
-        api_device_main_status = f"{api_device}/components/main/status"
+        # api_device_main_status = f"{api_device}/components/main/status"
 
         self._prev_state = self._state
 

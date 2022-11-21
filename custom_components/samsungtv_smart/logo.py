@@ -250,8 +250,8 @@ class Logo:
         try:
             async with aiofiles.open(logo_file, "r") as f:
                 image_paths = json.loads(await f.read())
-        except:
-            _LOGGER.warning("Failed to read logo paths file %s", logo_file)
+        except Exception as exc:
+            _LOGGER.warning("Failed to read logo paths file %s: %s", logo_file, exc)
             return
 
         if image_paths:

@@ -64,12 +64,10 @@ from .const import (
     MIN_HA_MAJ_VER,
     MIN_HA_MIN_VER,
     RESULT_NOT_SUCCESSFUL,
-    RESULT_NOT_SUPPORTED,
     RESULT_ST_DEVICE_NOT_FOUND,
     RESULT_SUCCESS,
     RESULT_WRONG_APIKEY,
     WS_PREFIX,
-    AppLoadMethod,
     __min_ha_version__,
 )
 from .logo import CUSTOM_IMAGE_BASE_URL, STATIC_IMAGE_BASE_URL
