@@ -8,6 +8,7 @@ import logging
 from typing import Dict, List, Optional
 
 from aiohttp import ClientConnectionError, ClientResponseError, ClientSession
+
 from homeassistant.util import Throttle
 
 API_BASEURL = "https://api.smartthings.com/v1"

@@ -9,6 +9,9 @@ import socket
 
 from aiohttp import ClientConnectionError, ClientResponseError, ClientSession
 import async_timeout
+import voluptuous as vol
+from websocket import WebSocketException
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_DEVICE_ID,
@@ -31,8 +34,6 @@ from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.helpers.typing import ConfigType
-import voluptuous as vol
-from websocket import WebSocketException
 
 from .api.samsungws import ConnectionFailure, SamsungTVWS
 from .api.smartthings import SmartThingsTV

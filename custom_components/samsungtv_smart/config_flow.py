@@ -5,6 +5,8 @@ import logging
 import socket
 from typing import Any, Dict
 
+import voluptuous as vol
+
 from homeassistant import config_entries
 from homeassistant.components.binary_sensor import DOMAIN as BS_DOMAIN
 from homeassistant.const import (
@@ -23,7 +25,6 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import config_validation as cv, entity_registry as er
-import voluptuous as vol
 
 from . import SamsungTVInfo, get_device_info, is_valid_ha_version
 from .const import (
