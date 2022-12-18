@@ -125,7 +125,7 @@ Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
 This option determine the mode application list is automatic generated.<br>
 With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` will be generated a minimal list
 with only the most common application, with `Not Load` application list will be empty.<br/>
-**Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
+**Note: If a custom `Application List` in config options is defined this option is not used.**<br>
 
 - **Logo options**<br/>
 The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color).<br/>
@@ -225,9 +225,16 @@ Default value:<br/>
 If SmartThings is [configured](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md) and the
 source_list not, the component will try to identify and configure automatically the sources configured on the TV with
 the relative associated names (new feature, tested on QLed TV). The created list is available in the HA log file.<br/>
-You can also chain KEYS, example: 'TV: KEY_SOURCES+KEY_ENTER'<br/>
+You can also chain KEYS, example: 
+```
+    1| TV: KEY_SOURCES+KEY_ENTER
+```
+
 And even add delays (in milliseconds) between sending KEYS, example:<br/>
-    'TV: KEY_SOURCES+500+KEY_ENTER'<br/>
+```
+    1| TV: KEY_SOURCES+500+KEY_ENTER
+```
+
 Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md) / [key patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_chaining.md)<br/>
 **Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of
 the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings)
@@ -306,7 +313,7 @@ Example value: "192.168.1.255"<br/>
 ### Deprecated configuration parameters
 
 Deprecated parameters were used by old integration version. Are still valid but normally are automatically imported
-in application option, so after import should be removed from `configuration.yaml`.
+in application options and not used anymore, so after first import can be removed from `configuration.yaml`.
 
 - **source_list:**<br/>
 (json)(Optional)<br/>
