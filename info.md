@@ -11,15 +11,6 @@ feature like the possibility to configure it using the HA user interface, simpli
 I also added some code optimizition in the comunication layer using async aiohttp instead of request.
 **Part of the code and documentation available here come from the original project.**<br/>
 
-### Important note 
-Starting from version 0.2.x the websocket protocol has been completely rewritten in order to keep communication with the
-TV always open (as it should be). In addition, all REST-type messages, that create problems in communications and 
-management of the access token, have been eliminated.<br/>
-The new protocol should make communication with the TV much more efficient, however, being this the first version, I ask 
-everyone to open any [issues](https://github.com/ollo69/ha-samsungtv-smart/issues) with the greatest number of details 
-so that I can identify and resolve any anomalies in the best way. For those who cannot use the new version, they can 
-eventually install the latest version 0.1.x waiting new fixes.
-
 # Additional Features:
 
 * Ability to send keys using a native Home Assistant service
@@ -60,7 +51,7 @@ websocket connection initialization.
 
 **Please refer to [readme](https://github.com/ollo69/ha-samsungtv-smart/blob/master/README.md) for details on optional parameter and additional configuration instruction.**
 
-# Be nice!
+# Be kind!
 If you like the component, why don't you support me by buying me a coffe?
 It would certainly motivate me to further improve this work.
 

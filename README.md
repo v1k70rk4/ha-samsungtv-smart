@@ -6,24 +6,15 @@
 
 # HomeAssistant - SamsungTV Smart Component
 
-This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io). 
+This is a custom component to allow control of SamsungTV devices in [HomeAssistant](https://home-assistant.io).
 Is a modified version of the built-in [samsungtv](https://www.home-assistant.io/integrations/samsungtv/) with some extra
  features.<br/>
 **This plugin is only for 2016+ TVs model!** (maybe all tizen family)
 
-This project is a fork of the component [SamsungTV Tizen](https://github.com/jaruba/ha-samsungtv-tizen). I added some 
-feature like the possibility to configure it using the HA user interface, simplifing the configuration process. 
+This project is a fork of the component [SamsungTV Tizen](https://github.com/jaruba/ha-samsungtv-tizen). I added some
+feature like the possibility to configure it using the HA user interface, simplifing the configuration process.
 I also added some code optimizition in the comunication layer using async aiohttp instead of request.
 **Part of the code and documentation available here come from the original project.**<br/>
-
-### Important note 
-Starting from version 0.2.x the websocket protocol has been completely rewritten in order to keep communication with the
-TV always open (as it should be). In addition, all REST-type messages, that create problems in communications and 
-management of the access token, have been eliminated.<br/>
-The new protocol should make communication with the TV much more efficient, however, being this the first version, I ask 
-everyone to open any [issues](https://github.com/ollo69/ha-samsungtv-smart/issues) with the greatest number of details 
-so that I can identify and resolve any anomalies in the best way. For those who cannot use the new version, they can 
-eventually install the latest version 0.1.x waiting new fixes.
 
 # Additional Features:
 
@@ -75,27 +66,27 @@ There are two ways of doing so:
 - Using the web interface (Lovelace) [**recommended**]
 - Manually editing the `configuration.yaml` file
 
-**Important**: To complete the configuration procedure properly, you must be sure that your **TV is turned on and 
-connected to the LAN (wired or wireless)**. Stay near to your TV during configuration because probably you will need 
+**Important**: To complete the configuration procedure properly, you must be sure that your **TV is turned on and
+connected to the LAN (wired or wireless)**. Stay near to your TV during configuration because probably you will need
 to accept the access request that will prompt on your TV screen.
 
-**Note**: To configure the component for using **SmartThings (strongly suggested)** you need to generate an access 
-token as explained in [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md). 
-Also make sure your **TV is logged into your SmartThings account** and **registered in SmartThings phone app** before 
+**Note**: To configure the component for using **SmartThings (strongly suggested)** you need to generate an access
+token as explained in [this guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md).
+Also make sure your **TV is logged into your SmartThings account** and **registered in SmartThings phone app** before
 starting configuration.
 
 ### Option A: Configuration using the web UI [**recommended**]
 
 1. From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Click `+` button in botton right corner,
 search '**SamsungTV Smart**' and click 'Configure'.
-2. In the configuration mask, enter the IP address of the TV, the name for the Entity and the SmartThings personal 
+2. In the configuration mask, enter the IP address of the TV, the name for the Entity and the SmartThings personal
 access token (if created) and then click 'Submit'
 3. **Important**: look for your TV screen and confirm **immediatly** with OK if a popup appear.
 4. Congrats! You're all set!
 
 **Note**: be sure that your TV and HA are connected to the same VLAN. Websocket connection through different VLAN normally
 not work because not supported by Samsung TV.
-If you have errors during configuration, try to power cycle your TV. This will close running applications that can prevent 
+If you have errors during configuration, try to power cycle your TV. This will close running applications that can prevent
 websocket connection initialization.
 
 ### Option B: Configuration via editing `configuration.yaml`
@@ -107,7 +98,7 @@ You can still use `configuration.yaml` to set the additional parameter as explai
 
 From the Home Assistant front-end, navigate to 'Configuration' then 'Integrations'. Identify the '**SamsungTV Smart**'
 integration configured for your TV and click the `OPTIONS` button.<br/>
-Here you can change the following options:  
+Here you can change the following options:
 
 - **Use SmartThings TV Status information**<br/>
 (default = True)<br/>
@@ -118,65 +109,52 @@ about the TV Status. This information is always used in conjunction with local p
 - **Use SmartThings TV Channels information**<br/>
 (default = True)<br/>
 **This option is available only if SmartThings is configured.**
-When enabled the component will try to retrieve from SmartThings the information about the TV Channel 
+When enabled the component will try to retrieve from SmartThings the information about the TV Channel
 and TV Channel Name or the Running App<br/>
 **Note: in some case this information is not properly updated, disabled it you have incorrect information.**<br/>
 
 - **Use SmartThings TV Channels number information**<br/>
 (default = False)<br/>
 **This option is available only if SmartThings is configured.**
-When enabled then the TV Channel Names will show as media titles, by setting this to True the 
+When enabled then the TV Channel Names will show as media titles, by setting this to True the
 TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
 **Note: not always SmartThings provide the information for channel_name and channel_number.**<br/>
 
-- **Method used to turn on TV**<br/>
-Possible values: `WOL Packet` and `SmartThings`<br/>
-**This option is available only if SmartThings is configured.**
-WOL Packet is better when TV use wired connection.<br/>
-SmartThings normally work only when TV use wireless connection.<br/>
-    
+- **Applications list load mode at startup**<br/>
+Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
+This option determine the mode application list is automatic generated.<br>
+With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` will be generated a minimal list
+with only the most common application, with `Not Load` application list will be empty.<br/>
+**Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
+
 - **Logo options**<br/>
 The background color and channel / service logo preference to use, example: "white-color" (background: white, logo: color).<br/>
 Supported values: "none", "white-color", "dark-white", "blue-color", "blue-white", "darkblue-white", "transparent-color", "transparent-white"<br/>
 Default value: "white-color" (background: white, logo: color)<br/>
-Notice that your logo is missing or outdated? In case of a missing TV channel logo also make sure you have Smartthings enabled. 
+Notice that your logo is missing or outdated? In case of a missing TV channel logo also make sure you have Smartthings enabled.
 This is required for the component to know the name of the TV channel.<br/>
-Check guide [here](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Logos.md) 
+Check guide [here](https://github.com/jaruba/ha-samsungtv-tizen/blob/master/Logos.md)
 for updating the logo database this component is relying on.
 
 - **Allow use of local logo images**<br/>
 (default = True)<br/>
-When enabled the integration will try to get logo image for the current media from the `www/samsungtv_smart_logos` sub folder of home-assistant configuration folder. 
+When enabled the integration will try to get logo image for the current media from the `www/samsungtv_smart_logos` sub folder of home-assistant configuration folder.
 You can add new logo images in this folder, using the following rules for logo filename:
   - must be equal to the name of the `media_title` attribute, removing space, `_` and `.` characters and replacing `+` character with
   the string `plus`
   - must have the `.png` suffix
   - must be in `png` format (suggested size is 400x400 pixels)
 
-- **List of entity to Power OFF with TV**<br/>
-A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). Select entities from list. 
-This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>
-
-- **List of entity to Power ON with TV**<br/>
-A list of HA entity to Turn ON when the TV entity is turned ON (maximum 4).  Select entities from list.
-This call the service `homeassistant.turn_on` for maximum the first 4 entity in the provided list.<br/>
+- **Method used to turn on TV**<br/>
+Possible values: `WOL Packet` and `SmartThings`<br/>
+**This option is available only if SmartThings is configured.**
+WOL Packet is better when TV use wired connection.<br/>
+SmartThings normally work only when TV use wireless connection.<br/>
 
 - **Show advanced options**<br/>
-Selecting this option and clicking submit a new options page is opened containing the advanced options described below.
+Selecting this option and clicking submit a new options menu is opened containing the list of other options described below.
 
 ### Advanced options
-
-- **Applications list load mode at startup**<br/>
-Possible values: `All Apps`, `Default Apps` and `Not Load`<br/>
-This option determine the mode application list is automatic generated.<br>
-With `All Apps` the list will contain all apps installed on the TV, with `Default Apps` will be generated a minimal list  
-with only the most common application, with `Not Load` application list will be empty.<br/>
-**Note: If a custom `app_list` in `configuration.yaml` file is defined this option is not used.**<br>
-
-- **Dump apps list on log file at startup**<br/>
-(default = False)<br/>
-When enabled the component will try to dump the list of available apps on TV in the HA log file at Info level.
-The dump of the apps may not work for some TV models.<br/>
 
 - **Applications launch method used**<br/>
 Possible values: `Control Web Socket Channel`, `Remote Web Socket Channel` and `Rest API Call`<br/>
@@ -185,9 +163,9 @@ Use `Rest API Call` only if the other 2 methods do not work.<br/>
 
 - **Number of times WOL packet is sent to turn on TV**<br/>
 (default = 1, range from 1 to 5)<br/>
-This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value 
+This option allow to configure the number of time the WOL packet is sent to turn on TV. Increase the value
 until the TV properly turn-on.<br/>
- 
+
 - **Seconds to delay power ON status**<br/>
 (default = 30, range from 0 to 60)<br/>
 This option allow to configure a delay to wait before setting the TV status to ON. This is used to avoid false
@@ -202,7 +180,7 @@ available when TV is on (possible working ports, depending on TV models, are `91
 
 - **Binary sensor to help detect power status**<br/>
 An external `binary_sensor` selectable from a list that can be used to determinate TV power status.<br/>
-This can be any available `binary_sensor` that can better determinate the status of the TV, for example a 
+This can be any available `binary_sensor` that can better determinate the status of the TV, for example a
 `binary_sensor` based on TV power consumption. It is suggested to not use a sensor based on `ping` platform
 because this method is already implemented by the integration.</br>
 
@@ -211,18 +189,98 @@ because this method is already implemented by the integration.</br>
 When enabled try to detect fake power on based on the Volume mute state, based on the assumption that when the
 TV is powered on the volume is always unmuted.<br/>
 
+- **Dump apps list on log file at startup**<br/>
+(default = False)<br/>
+When enabled the component will try to dump the list of available apps on TV in the HA log file at Info level.
+The dump of the apps may not work for some TV models.<br/>
+
 - **Power button switch to art mode**<br/>
 (default = False)<br/>
-When enabled the power button in UI will be used to toggle from `On` to `Art Mode` (and vice versa) and will not 
+When enabled the power button in UI will be used to toggle from `On` to `Art Mode` (and vice versa) and will not
 power off the TV (you can still use the `turn off` service to power off the TV).<br/>
 **Note: This option is valid only for TV that support `Art Mode` ("The Frame" models).**<br>
 
+### Synched entities configuration
+
+- **List of entity to Power OFF with TV**<br/>
+A list of HA entity to Turn OFF when the TV entity is turned OFF (maximum 4). Select entities from list.
+This call the service `homeassistant.turn_off` for maximum the first 4 entity in the provided list.<br/>
+
+- **List of entity to Power ON with TV**<br/>
+A list of HA entity to Turn ON when the TV entity is turned ON (maximum 4).  Select entities from list.
+This call the service `homeassistant.turn_on` for maximum the first 4 entity in the provided list.<br/>
+
+### Sources list configuration
+
+This contains the KEYS visible sources in the dropdown list in media player UI.<br/> 
+You can configure the pair list `Name: Key` using the yaml editor in the option page. If a source list is present in
+`configuration.yaml`, it will be imported in the options the first time that the integration is loaded.<br/>
+
+Default value:<br/>
+```
+    1| TV: KEY_TV
+    2| HDMI: KEY_HDMI
+```
+
+If SmartThings is [configured](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md) and the
+source_list not, the component will try to identify and configure automatically the sources configured on the TV with
+the relative associated names (new feature, tested on QLed TV). The created list is available in the HA log file.<br/>
+You can also chain KEYS, example: 'TV: KEY_SOURCES+KEY_ENTER'<br/>
+And even add delays (in milliseconds) between sending KEYS, example:<br/>
+    'TV: KEY_SOURCES+500+KEY_ENTER'<br/>
+Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md) / [key patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_chaining.md)<br/>
+**Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of
+the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings)
+(under "Mode Settings")**<br/>
+
+### Application list configuration
+
+This contains the APPS visible sources in the dropdown list in media player UI.<br/>
+You can configure the pair list `Name: Key` using the yaml editor in the option page. If an application list is present in
+`configuration.yaml`, it will be imported in the options the first time that the integration is loaded.<br/>
+
+If the `Application list` is not manually configured, during startup the integration will try to automatically generate a list 
+of available application and a log message is generated with the content of the list. This list can be used to create a manual 
+list following [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/App_list.md). Automatic list
+generation not work with some TV models.<br/>
+
+Example value:
+```
+    1| Netflix: 11101200001 
+    2| YouTube: 111299001912 
+    3| Spotify: 3201606009684
+```
+
+Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879),
+[List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
+
+### Channel list configuration
+
+This contains the tv CHANNELS visible sources in the dropdown list in media player UI. To guarantee performance keep the list small,
+recommended maximum 30 channels.<br/>
+You can configure the pair list `Name: Key` using the yaml editor in the option page. If a channel list is present in
+`configuration.yaml`, it will be imported in the options the first time that the integration is loaded.<br/>
+
+Example value: 
+```
+    1| MTV: 14
+    2| Eurosport: 20
+    3| TLC: 21
+```
+
+You can also specify the source that must be used for every channel. The source must be one of the source name defined in the `source_list`<br/>
+Example value: 
+```
+    1| MTV: 14@TV
+    2| Eurosport: 20@TV
+    3| TLC: 21@HDMI
+```
 
 ## Custom configuration parameters
 
 You can configure additional option for the component using configuration variable in `configuration.yaml` section.<br/>
 
-Section in `configuration.yaml` file can also not be present and is not required for component to work. If you 
+Section in `configuration.yaml` file can also not be present and is not required for component to work. If you
 want to configure any parameters, you must create one section that start with `- host` as shown in the example below:<br/>
 ```
 samsungtv_smart:
@@ -231,44 +289,11 @@ samsungtv_smart:
 ```
 Then you can add any of the following parameters:<br/>
 
-- **source_list:**<br/>
-(json)(Optional)<br/>
-This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
-Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
-If SmartThings is [configured](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md) and the 
-source_list not, the component will try to identify and configure automatically the sources configured on the TV with 
-the relative associated names (new feature, tested on QLed TV). The created list is available in the HA log file.<br/>
-You can also chain KEYS, example: '{"TV": "KEY_SOURCES+KEY_ENTER"}'<br/>
-And even add delays (in milliseconds) between sending KEYS, example:<br/>
-    '{"TV": "KEY_SOURCES+500+KEY_ENTER"}'<br/>
-Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md) / [key patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_chaining.md)<br/>
-**Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of 
-the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings) 
-(under "Mode Settings")**<br/>
-    
-- **app_list:**<br/>
-(json)(Optional)<br/>
-This contains the APPS visible sources in the dropdown list in media player UI.<br/>
-Default value: AUTOGENERATED<br/>
-If the `app_list` is not manually configured, during startup is generated a file in the custom component folder with the 
-list of all available applications. This list can be used to create a manual list following [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/App_list.md)<br/>
-Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'<br/>
-Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879), 
-[List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
-
-- **channel_list:**<br/>
-(json)(Optional)<br/>
-This contains the tv CHANNELS visible sources in the dropdown list in media player UI. To guarantee performance keep the list small, 
-recommended maximum 30 channels.<br/>
-Example value: '{"MTV": "14", "Eurosport": "20", "TLC": "21"}'<br/>
-You can also specify the source that must be used for every channel. The source must be one of the defined in the `source_list`<br/>
-Example value: '{"MTV": "14@TV", "Eurosport": "20@TV", "TLC": "21@HDMI"}'<br/>
-
 - **mac:**<br/>
 (string)(Optional)<br/>
-This is an optional value, normally is automatically detected during setup phase and so is not required to specify it. 
+This is an optional value, normally is automatically detected during setup phase and so is not required to specify it.
 You should try to configure this parameter only if the setup fail in the detection.<br/>
-The mac-address is used to turn on the TV. If you set it manually, you must find the right value from the TV Menu or 
+The mac-address is used to turn on the TV. If you set it manually, you must find the right value from the TV Menu or
 from your network router.<br/>
 
 - **broadcast_address:**<br/>
@@ -280,9 +305,51 @@ Example value: "192.168.1.255"<br/>
 
 ### Deprecated configuration parameters
 
+Deprecated parameters were used by old integration version. Are still valid but normally are automatically imported
+in application option, so after import should be removed from `configuration.yaml`.
+
+- **source_list:**<br/>
+(json)(Optional)<br/>
+This contains the KEYS visible sources in the dropdown list in media player UI.<br/>
+Default value: '{"TV": "KEY_TV", "HDMI": "KEY_HDMI"}'<br/>
+If SmartThings is [configured](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md) and the
+source_list not, the component will try to identify and configure automatically the sources configured on the TV with
+the relative associated names (new feature, tested on QLed TV). The created list is available in the HA log file.<br/>
+You can also chain KEYS, example: '{"TV": "KEY_SOURCES+KEY_ENTER"}'<br/>
+And even add delays (in milliseconds) between sending KEYS, example:<br/>
+    '{"TV": "KEY_SOURCES+500+KEY_ENTER"}'<br/>
+Resources: [key codes](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_codes.md) / [key patterns](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Key_chaining.md)<br/>
+**Warning: changing input source with voice commands only works if you set the device name in `source_list` as one of
+the whitelisted words that can be seen on [this page](https://web.archive.org/web/20181218120801/https://developers.google.com/actions/reference/smarthome/traits/modes#mode-settings)
+(under "Mode Settings")**<br/>
+
+- **app_list:**<br/>
+(json)(Optional)<br/>
+This contains the APPS visible sources in the dropdown list in media player UI.<br/>
+Default value: AUTOGENERATED<br/>
+If the `app_list` is not manually configured, during startup is generated a file in the custom component folder with the
+list of all available applications. This list can be used to create a manual list following [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/App_list.md)<br/>
+Example value: '{"Netflix": "11101200001", "YouTube": "111299001912", "Spotify": "3201606009684"}'<br/>
+Known lists of App IDs: [List 1](https://github.com/tavicu/homebridge-samsung-tizen/issues/26#issuecomment-447424879),
+[List 2](https://github.com/Ape/samsungctl/issues/75#issuecomment-404941201)<br/>
+
+- **channel_list:**<br/>
+(json)(Optional)<br/>
+This contains the tv CHANNELS visible sources in the dropdown list in media player UI. To guarantee performance keep the list small,
+recommended maximum 30 channels.<br/>
+Example value: '{"MTV": "14", "Eurosport": "20", "TLC": "21"}'<br/>
+You can also specify the source that must be used for every channel. The source must be one of the defined in the `source_list`<br/>
+Example value: '{"MTV": "14@TV", "Eurosport": "20@TV", "TLC": "21@HDMI"}'<br/>
+
+
+### Removed configuration parameters
+
+Removed parameters were used by old integration version, are not used and supported anymore and replaced by application option.
+For this reason should be removed from `configuration.yaml`.
+
 - **api_key:**<br/>
 (string)(Optional) (obsolete/not used from v0.3.16 - configuration from yaml is not allowed)<br/>
-API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source, 
+API Key for the SmartThings Cloud API, this is optional but adds better state handling on, off, channel name, hdmi source,
 and a few new keys: `ST_TV`, `ST_HDMI1`, `ST_HDMI2`, `ST_HDMI3`, etc. (see more at [SmartThings Keys](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-keys))<br/>
 Read [How to get an API Key for SmartThings](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md)<br/>
 This parameter can also be provided during the component configuration using the user interface.<br/>
@@ -294,26 +361,26 @@ Device ID for the SmartThings Cloud API. This is optional, to be used only if co
 Read [SmartThings Device ID](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/Smartthings.md#smartthings-device-id)
 to understand how identify the correct value to use.<br/>
 This parameter will be requested during component configuration from user interface when required.<br/>
-**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to 
+**Note: this parameter is used only during initial configuration and then stored in the registry. It's not possible to
 change the value after that the component is configured. To change the value you must delete the integration from UI.**<br/>
 
 - **device_name:** (obsolete/not used from v0.3.16 - configuration from yaml is not allowed)<br/>
 (string)(Optional)<br/>
-This is an optional value, used only to identify the TV in SmartThings during initial configuration if you have more TV 
+This is an optional value, used only to identify the TV in SmartThings during initial configuration if you have more TV
 registered. You should  configure this parameter only if the setup fails in the detection.<br/>
 The device_name to use can be read using the SmartThings app<br/>
 **Note: this parameter is used only during initial configuration.**<br/>
 
 - **show_channel_number:** (obsolete/not used from v0.3.16 and replaced by Configuration options)<br/>
 (boolean)(Optional)<br/>
-If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media 
+If the SmartThings API is enabled (by settings "api_key" and "device_id"), then the TV Channel Names will show as media
 titles, by setting this to True the TV Channel Number will also be attached to the end of the media title (when applicable).<br/>
 **Note: not always SmartThings provide the information for channel_name and channel_number.**<br/>
 
 - **load_all_apps:** (obsolete/not used from v0.3.4 and replaced by Configuration options)<br/>
 (boolean)(Optional)<br/>
 This option is `True` by default.</br>
-Setting this parameter to false, if a custom `app_list` is not defined, the automatic app_list will be generated  
+Setting this parameter to false, if a custom `app_list` is not defined, the automatic app_list will be generated
 limited to few application (the most common).<br/>
 
 - **update_method:** (obsolete/not used from v0.3.3)<br/>
@@ -330,7 +397,7 @@ Example update_custom_ping_url: "http://192.168.1.77:9197/dmr"<br/>
 
 - **scan_app_http:** (obsolete/not used from v0.2.x)<br/>
 (boolean)(Optional)<br/>
-This option is `True` by default. In some cases (if numerical IDs are used when setting `app_list`) HTTP polling will 
+This option is `True` by default. In some cases (if numerical IDs are used when setting `app_list`) HTTP polling will
 be used (1 request per app) to get the running app.<br/>
 This is a lengthy task that some may want to disable, you can do so by setting this option to `False`.<br/>
 For more information about how we get the running app, read the [app_list guide](https://github.com/ollo69/ha-samsungtv-smart/blob/master/docs/App_list.md).<br/>
@@ -488,7 +555,7 @@ service: samsungtv_smart.set_art_mode
 }
 ```
 
-# Be nice!
+# Be kind!
 If you like the component, why don't you support me by buying me a coffe?
 It would certainly motivate me to further improve this work.
 
