@@ -432,6 +432,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
         self._entry_id = config_entry.entry_id
+        self._adv_chk = False
         self._std_options = config_entry.options.copy()
         self._adv_options = {
             key: values
@@ -466,9 +467,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_create_entry(title="", data=entry_data)
 
     async def async_step_init(self, user_input=None):
-        """Handle options flow."""
+        """Handle initial options flow."""
         if user_input is not None:
             if user_input.pop(CONF_SHOW_ADV_OPT, False):
+                self._adv_chk = True
                 self._std_options = user_input
                 return await self.async_step_menu()
             return self._save_entry(data=user_input)
@@ -533,7 +535,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             data_schema = vol.Schema(opt_schema)
 
         data_schema = data_schema.extend(
-            {vol.Required(CONF_SHOW_ADV_OPT, default=False): bool}
+            {vol.Required(CONF_SHOW_ADV_OPT, default=self._adv_chk): bool}
         )
 
         return self.async_show_form(step_id="init", data_schema=data_schema)
