@@ -54,7 +54,7 @@ from homeassistant.util.async_ import run_callback_threadsafe
 
 from .api.samsungws import ArtModeStatus, SamsungTVWS
 from .api.smartthings import SmartThingsTV, STStatus
-from .api.upnp import upnp
+from .api.upnp import SamsungUPnP
 from .const import (
     CONF_APP_LAUNCH_METHOD,
     CONF_APP_LIST,
@@ -344,7 +344,7 @@ class SamsungTVDevice(MediaPlayerEntity):
         self._ws.register_new_token_callback(new_token_callback)
 
         # upnp initialization
-        self._upnp = upnp(host=self._host, session=session)
+        self._upnp = SamsungUPnP(host=self._host, session=session)
 
         # smartthings initialization
         self._st = None
