@@ -684,7 +684,7 @@ class SamsungTVDevice(MediaPlayerEntity):
             return
 
         app_load_method = AppLoadMethod(
-            self._get_option(CONF_APP_LOAD_METHOD, AppLoadMethod.Default.value)
+            self._get_option(CONF_APP_LOAD_METHOD, AppLoadMethod.All.value)
         )
 
         # app_list is a list of dict
