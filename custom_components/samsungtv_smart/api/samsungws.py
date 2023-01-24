@@ -333,9 +333,7 @@ class SamsungTVWS:
 
     def update_app_list(self, app_list: dict | None):
         """Update application list."""
-        if not app_list:
-            self._app_list = None
-        self._app_list = dict(app_list)
+        self._app_list = dict(app_list) if app_list else None
 
     def register_new_token_callback(self, func):
         """Register a callback function."""
