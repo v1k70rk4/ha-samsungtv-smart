@@ -1228,7 +1228,8 @@ class SamsungTVDevice(MediaPlayerEntity):
             and self._get_device_spec("FrameTVSupport") == "true"
         ):
             await self.async_send_command("KEY_POWER")
-        await self._async_turn_on(True)
+        else:
+            await self._async_turn_on(True)
 
     def _turn_off(self):
         """Turn off media player."""
