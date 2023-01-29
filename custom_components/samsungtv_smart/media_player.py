@@ -547,9 +547,9 @@ class SamsungTVDevice(MediaPlayerEntity):
     def _get_running_app(self):
         """Retrieve name of running apps."""
 
+        st_running_app = None
         if self._app_list is not None:
 
-            st_running_app = None
             for app, app_id in self._app_list.items():
                 if app_running := self._ws.is_app_running(app_id):
                     self._running_app = app
