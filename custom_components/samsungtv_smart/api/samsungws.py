@@ -623,9 +623,10 @@ class SamsungTVWS:
             return
         if (result := response.get("result")) is None:
             return
-        if isinstance(result, bool):
-            is_running = result
-        elif (is_running := result.get("visible")) is None:
+        if not isinstance(result, dict):
+            self._running_app = None
+            return
+        if (is_running := result.get("visible")) is None:
             return
 
         self._last_running_scan = datetime.utcnow()
