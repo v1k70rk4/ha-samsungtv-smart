@@ -1000,7 +1000,6 @@ class SamsungTVWS:
             if self._client_art_supported > 0 and (
                 self._client_art is None or not self._client_art.is_alive()
             ):
-
                 if self._client_art_supported > 1:
                     self._client_art_supported = 0
                 self._client_art = Thread(target=self._client_art_thread)
