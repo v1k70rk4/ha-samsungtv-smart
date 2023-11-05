@@ -5,10 +5,10 @@ from typing import Any
 
 from homeassistant.const import (
     ATTR_CONNECTIONS,
-    ATTR_SW_VERSION,
     ATTR_IDENTIFIERS,
-    CONF_ID,
+    ATTR_SW_VERSION,
     CONF_HOST,
+    CONF_ID,
     CONF_MAC,
     CONF_NAME,
 )
