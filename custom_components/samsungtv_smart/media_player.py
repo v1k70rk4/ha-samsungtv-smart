@@ -664,10 +664,12 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
             )
             return False
 
-        if source_key.startswith("ST_HDMI") or source_key == "ST_PC":
+        if source_key.startswith("ST_HDMI"):
             await self._st.async_select_source(source_key.replace("ST_", ""))
         elif source_key == "ST_TV":
             await self._st.async_select_source("digitalTv")
+        elif source_key == "ST_PC":
+            await self._st.async_select_vd_source(source_key.replace("ST_", ""))
         elif source_key == "ST_CHUP":
             await self._st.async_send_command("stepchannel", "up")
         elif source_key == "ST_CHDOWN":

@@ -26,9 +26,9 @@ If during configuration flow automatic detection of SmartThings device ID fails,
 insert it.
 To identify your TV device ID use the following steps:
 
-- Go [here](https://graph-eu01-euwest1.api.smartthings.com/device/list) and login with your SmartThings credential
+- Go [here](https://my.smartthings.com/advanced/devices) and login with your SmartThings credential
 - Click on the name of your TV from the list of available devices
-- In the new page search the row called `Current States` and look for the property called `di`
+- In the new page search the colump called `Device ID`
 - Copy the value (is a UUID code) and paste it in the HomeAssistant configuration page
 
 
