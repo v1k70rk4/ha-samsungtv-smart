@@ -1,6 +1,6 @@
 # HomeAssistant - SamsungTV Smart Component
 
-## ***Enable SmartThings*** - Setup instructions 
+## ***Enable SmartThings*** - Setup instructions
 
 ### Create personal access token
 
@@ -22,7 +22,7 @@ Once the SmartThings token has been generated, you need to configure the compone
 
 #### SmartThings Device ID
 
-If during configuration flow automatic detection of SmartThings device ID fails, a new configuration page will open requesting you to manual 
+If during configuration flow automatic detection of SmartThings device ID fails, a new configuration page will open requesting you to manual
 insert it.
 To identify your TV device ID use the following steps:
 
@@ -50,6 +50,7 @@ ____________
 Key|Description
 ---|-----------
 ST_TV|TV
+ST_PC|PC
 ST_HDMI1|HDMI1
 ST_HDMI2|HDMI2
 ST_HDMI3|HDMI3
@@ -71,7 +72,7 @@ ST_CH3|Channel3
 ______________
 Key|Description
 ---|-----------
-ST_MUTE|Mute/Unmute 
+ST_MUTE|Mute/Unmute
 ST_VOLUP|VolumeUp
 ST_VOLDOWN|VolumeDown
 ST_VOL1|VolumeLevel1
