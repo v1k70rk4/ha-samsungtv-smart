@@ -28,7 +28,7 @@ To identify your TV device ID use the following steps:
 
 - Go [here](https://my.smartthings.com/advanced/devices) and login with your SmartThings credential
 - Click on the name of your TV from the list of available devices
-- In the new page search the colump called `Device ID`
+- In the new page search the column called `Device ID`
 - Copy the value (is a UUID code) and paste it in the HomeAssistant configuration page
 
 
@@ -50,12 +50,16 @@ ____________
 Key|Description
 ---|-----------
 ST_TV|TV
-ST_PC|PC
+ST_VD:`src`|`src`
 ST_HDMI1|HDMI1
 ST_HDMI2|HDMI2
 ST_HDMI3|HDMI3
 ST_HDMI4|HDMI4
 ...
+
+
+With ST_VD:`src` replace `src` with the name of the source you want activate
+
 
 *Channel Keys*
 ______________
