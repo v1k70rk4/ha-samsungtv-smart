@@ -1,6 +1,6 @@
 # HomeAssistant - SamsungTV Smart Component
 
-## ***Enable SmartThings*** - Setup instructions 
+## ***Enable SmartThings*** - Setup instructions
 
 ### Create personal access token
 
@@ -22,13 +22,13 @@ Once the SmartThings token has been generated, you need to configure the compone
 
 #### SmartThings Device ID
 
-If during configuration flow automatic detection of SmartThings device ID fails, a new configuration page will open requesting you to manual 
+If during configuration flow automatic detection of SmartThings device ID fails, a new configuration page will open requesting you to manual
 insert it.
 To identify your TV device ID use the following steps:
 
-- Go [here](https://graph-eu01-euwest1.api.smartthings.com/device/list) and login with your SmartThings credential
+- Go [here](https://my.smartthings.com/advanced/devices) and login with your SmartThings credential
 - Click on the name of your TV from the list of available devices
-- In the new page search the row called `Current States` and look for the property called `di`
+- In the new page search the column called `Device ID`
 - Copy the value (is a UUID code) and paste it in the HomeAssistant configuration page
 
 
@@ -50,11 +50,16 @@ ____________
 Key|Description
 ---|-----------
 ST_TV|TV
+ST_VD:`src`|`src`
 ST_HDMI1|HDMI1
 ST_HDMI2|HDMI2
 ST_HDMI3|HDMI3
 ST_HDMI4|HDMI4
 ...
+
+
+With ST_VD:`src` replace `src` with the name of the source you want activate
+
 
 *Channel Keys*
 ______________
@@ -71,7 +76,7 @@ ST_CH3|Channel3
 ______________
 Key|Description
 ---|-----------
-ST_MUTE|Mute/Unmute 
+ST_MUTE|Mute/Unmute
 ST_VOLUP|VolumeUp
 ST_VOLDOWN|VolumeDown
 ST_VOL1|VolumeLevel1
